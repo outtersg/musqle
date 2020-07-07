@@ -11,6 +11,6 @@ insert into t (num, truc, nombre) values ('1000', '', 1);
 
 begin;
 declare ah cursor for select a.*, b.* from t a join t b on a.num = b.num and b.id > a.id;
-select * from diff('ah');
+select * from diff('ah', '{quand}');
 rollback;
 
