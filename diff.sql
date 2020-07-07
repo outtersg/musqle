@@ -20,12 +20,19 @@
 
 -- À FAIRE?: une version à appeler en select row(a.*), row(b.*): permettrait-ce d'appliquer un l.a is distinct from l.b en première passe, pour éviter de comparer champ par champ si tout se ressemble?
 -- À FAIRE?: sur de gros enregistrements, on aurait peut-être intérêt à générer une fonction temporaire dédiée à l'appel, qui accède directement aux champs par leur nom. Attention, cela requérerait le point précédent (travailler par record) car le but est de se passer de json, or c'est le seul format capable de gérer deux occurrences du même nom de champ dans une entrée. Pour travailler directement sur les record il faudra que A et B arrivent non plus l'un à la suite de l'autre, mais comme deux row séparés.
--- À FAIRE: colonnes à exclure. Ce peut être via une fonction immuable sur transaction, allant chercher une table de référence (pour éviter de la recalculer pour chaque doublon à comparer).
 
 -- Le curseur est ce qu'il y a de plus efficace, car il nous permet de faire une première passe pour récupérer le nom des colonnes, avant de boucler au plus rapide.
 -- Chaque ligne de n champs doit comporter deux moitiés, chaque moitié représentant un enregistrement à comparer, dont l'ID est conventionnellement attendu en première position de la moitié.
 -- Ainsi la comparaison de deux entrées A et B d'une table (id, num, descr) doit arriver sous la forme idA, numA, descrA, idB, numB, descB.
 create or replace function diff(trucs refcursor) returns table(ida bigint, idb bigint, champ text, a text, b text) as
+$$
+	begin
+		return query select * from diff(trucs, null);
+	end;
+$$
+language plpgsql;
+
+create or replace function diff(trucs refcursor, sauf text[]) returns table(ida bigint, idb bigint, champ text, a text, b text) as
 $$
 	declare
 		l record;
@@ -38,6 +45,9 @@ $$
 			select array_agg(col) into cols from cols;
 		ncols = array_length(cols, 1) / 2;
 		cols := cols[0:ncols]; -- On ne garde que la première moitié (les champs de la seconde moitié sont supposés avoir le même nom).
+		if sauf is not null then
+			select array_agg(nom) into cols from unnest(cols) cols(nom) where not nom = any(sauf);
+		end if;
 		loop
 			-- https://www.postgresql.org/message-id/trinity-f03554db-477f-45a8-8543-9fc5752fdec4-1399886293028%403capp-gmx-bs43
 			-- https://stackoverflow.com/a/8767450/1346819
@@ -49,7 +59,7 @@ $$
 				from tab a
 				join tab b on b.col = a.col + ncols and b.v is distinct from a.v
 				join ids on true
-				where a.col > 0
+				where a.col > 0 and a.c = any(cols)
 			;
 			fetch trucs into l;
 			exit when not found;
