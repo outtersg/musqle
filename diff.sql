@@ -67,3 +67,17 @@ $$
 	end;
 $$
 language plpgsql;
+
+comment on function diff(trucs refcursor, sauf text[]) is
+$$Renvoie la différence, champ par champ, entre deux ensembles de champs (typiquement deux entrées de la même table).
+
+Paramètres:
+	trucs
+		Curseur sur une requête de type a.*, b.*, avec autant de champs dans a que dans b, et la première colonne de chaque étant forcément un entier (sera utilisé comme ID pour signaler les différences).
+		Ex.:
+			begin;
+			declare ah cursor for select a.*, b.* from t a join t b on a.num = b.num and b.id > a.id;
+			select * from diff('ah');
+			rollback;
+	sauf
+		Si mentionné, exclut des champs de la comparaison.$$;
