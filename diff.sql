@@ -78,6 +78,7 @@ Paramètres:
 			begin;
 			declare ah cursor for select a.*, b.* from t a join t b on a.num = b.num and b.id > a.id;
 			select * from diff('ah');
+			close ah;
 			rollback;
 	sauf
 		Si mentionné, exclut des champs de la comparaison.$$;
