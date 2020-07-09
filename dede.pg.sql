@@ -30,6 +30,21 @@
 
 #define CIMETIERE _poubelle
 
+#if defined(DEDE_CLES_ETRANGERES_APPLICATIVES)
+#if `select count(*) from pg_tables where tablename = 'DEDE_CLES_ETRANGERES_APPLICATIVES'` = 0
+create table DEDE_CLES_ETRANGERES_APPLICATIVES
+(
+	id serial primary key,
+	vs text,
+	vt text,
+	vc text,
+	ds text,
+	dt text,
+	dc text
+);
+#endif
+#endif
+
 #include diff.pg.sql
 
 drop type if exists dede_champ cascade;
@@ -153,6 +168,13 @@ $$
 			with l as (select * from unnest(clesEtrangeresApplicatives))
 			select '-'::text, '-'::char, nomSchema, nomTable, 'id'::text, coalesce(l.schema, nomSchema), l.table, l.champ from l;
 		end if;
+#if defined(DEDE_CLES_ETRANGERES_APPLICATIVES)
+		return query
+			select '-'::text, '-'::char, c.vs, c.vt, c.vc, c.ds, c.dt, c.dc
+			from DEDE_CLES_ETRANGERES_APPLICATIVES c
+			where c.vs = nomSchema and c.vt = nomTable
+		;
+#endif
 	end;
 $$
 language plpgsql;
