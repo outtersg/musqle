@@ -32,7 +32,10 @@
 
 #include diff.pg.sql
 
-create or replace function dede(nomTable text, ancien bigint, nouveau bigint, diffSaufSurColonnes text[]) returns table(id bigint, err text) as
+drop type if exists dede_champ cascade;
+create type dede_champ as ("table" text, champ text, schema text);
+
+create or replace function dede(nomTable text, ancien bigint, nouveau bigint, clesEtrangeresApplicatives dede_champ[], diffSaufSurColonnes text[]) returns table(id bigint, err text) as
 $$
 	declare
 		curdi refcursor;
@@ -49,7 +52,8 @@ $$
 		
 		-- Vérification des clés étrangères.
 		
-		perform dede_exec('update '||ds||'.'||dt||' set '||dc||' = '||nouveau||' where '||dc||' = '||ancien) from dede_dependances(nomTable);
+		perform dede_exec('update '||ds||'.'||dt||' set '||dc||' = '||nouveau||' where '||dc||' = '||ancien)
+		from dede_dependances(nomTable, clesEtrangeresApplicatives);
 		
 		-- Historisation.
 		
