@@ -49,7 +49,7 @@ $$
 		
 		-- Vérification des clés étrangères.
 		
-		-- À FAIRE
+		perform dede_exec('update '||ds||'.'||dt||' set '||dc||' = '||nouveau||' where '||dc||' = '||ancien) from dede_dependances(nomTable);
 		
 		-- Historisation.
 		
@@ -98,6 +98,51 @@ $dede$
 		);
 	end;
 $dede$
+language plpgsql;
+
+create or replace function dede_cascade(nomTable text, ancien bigint, nouveau bigint) returns table(id bigint, err text) as
+$$
+	begin
+		return query
+		select 0::bigint, 'Clé étrangère '||nom||' non gérée: risque de drop cascade ['||vc||' <- '||dt||'('||dc||')]'
+		from dede_dependances(nomTable)
+		--where type = 'c'
+		;
+	end;
+$$
+language plpgsql;
+
+create or replace function dede_dependances(nomTable text) returns table(nom text, type char, vs text, vt text, vc text, ds text, dt text, dc text) as
+$$
+	declare
+		nomSchema text;
+	begin
+		if nomTable like '%.%' then
+			nomSchema := regexp_replace(nomTable, '[.].*', '');
+			nomTable := regexp_replace(nomTable, '.*[.]', '');
+		end if;
+		return query select
+			conname::text,
+			confdeltype::char,
+			nomSchema,
+			nomTable,
+			t.relname::text,
+			den.nspname::text,
+			dest.relname::text,
+			col.attname::text
+		from pg_constraint c
+			join pg_class t on t.oid = c.confrelid
+			join pg_namespace en on en.oid = t.relnamespace
+			join pg_class dest on dest.oid = c.conrelid
+			join pg_namespace den on den.oid = dest.relnamespace
+			left join unnest(c.conkey) as champs(num) on true
+			left join pg_attribute col on col.attrelid = c.conrelid and col.attnum = champs.num
+		where contype = 'f'
+			and t.relname = nomTable
+			and coalesce(en.nspname = nomSchema, true) -- Si aucun schéma n'est donné (reposant sur search_path), tant pis, on prend les tables de ce nom dans *tous* les schémas.
+		;
+	end;
+$$
 language plpgsql;
 
 create or replace function dede_exec(req text) returns void as
