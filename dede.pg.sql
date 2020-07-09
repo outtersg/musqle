@@ -61,13 +61,15 @@ $$
 	end;
 $$
 language plpgsql;
-comment on function dede(text, bigint, bigint, text[]) is
+comment on function dede(text, bigint, bigint, dede_champ[], text[]) is
 $$DÉdoublonnage DÉcontracté
 dede(nomTable text, ancien bigint, nouveau bigint, diffSaufSurColonnes text[])
 Supprime l'entrée <ancien> de la table <nomTable>, au profit de l'entrée <nouveau>.
 
 Sur les tables ayant déclaré une clé étrangère pointant sur notre colonne id, les entrées attachées à <ancien> sont reparentées à <nouveau>.
 L'ancienne entrée est historisée dans <table>CIMETIERE.
+
+Si <clesEtrangeresApplicatives> est non null, les tables ainsi listées sont considérées comme des tables liées par clé étrangère "BdD".
 
 Si <diffSaufSurColonnes> est non null, un diff est effectué sur les deux entrées (hors les champs listés dans <diffSaufSurColonnes>):
 si au moins un champ (hors ceux listés dans <diffSaufSurColonnes>) diffère, le dédoublonnage N'EST PAS effectué.
@@ -112,7 +114,7 @@ $$
 $$
 language plpgsql;
 
-create or replace function dede_dependances(nomTable text) returns table(nom text, type char, vs text, vt text, vc text, ds text, dt text, dc text) as
+create or replace function dede_dependances(nomTable text, clesEtrangeresApplicatives dede_champ[]) returns table(nom text, type char, vs text, vt text, vc text, ds text, dt text, dc text) as
 $$
 	declare
 		nomSchema text;
@@ -141,9 +143,21 @@ $$
 			and t.relname = nomTable
 			and coalesce(en.nspname = nomSchema, true) -- Si aucun schéma n'est donné (reposant sur search_path), tant pis, on prend les tables de ce nom dans *tous* les schémas.
 		;
+		if clesEtrangeresApplicatives is not null then
+			-- À FAIRE: pour les entrées n'ayant pas de schéma, aller chercher dans le schema_path plutôt que de prendre nomSchema.
+			return query
+			with l as (select * from unnest(clesEtrangeresApplicatives))
+			select '-'::text, '-'::char, nomSchema, nomTable, 'id'::text, coalesce(l.schema, nomSchema), l.table, l.champ from l;
+		end if;
 	end;
 $$
 language plpgsql;
+
+create or replace function dede_dependances(nomTable text) returns table(nom text, type char, vs text, vt text, vc text, ds text, dt text, dc text) as
+$$
+	select * from dede_dependances(nomTable, '{}');
+$$
+language sql;
 
 create or replace function dede_exec(req text) returns void as
 $$
