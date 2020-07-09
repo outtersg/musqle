@@ -95,6 +95,12 @@ si au moins un champ (hors ceux listés dans <diffSaufSurColonnes>) diffère, le
 
 Retour: liste d'erreurs (dont les différences observées si <diffSaufSurColonnes> est définie).$$;
 
+create or replace function dede(nomTable text, ancien integer, nouveau integer, clesEtrangeresApplicatives dede_champ[], diffSaufSurColonnes text[]) returns table(id bigint, err text) as
+$$
+	select dede(nomTable, ancien::bigint, nouveau::bigint, clesEtrangeresApplicatives, diffSaufSurColonnes);
+$$
+language sql;
+
 create or replace function dede_init(nomTable text) returns void as
 $dede$
 	begin
