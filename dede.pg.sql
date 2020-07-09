@@ -160,7 +160,7 @@ $$
 			left join pg_attribute col on col.attrelid = c.conrelid and col.attnum = champs.num
 		where contype = 'f'
 			and t.relname = nomTable
-			and coalesce(en.nspname = nomSchema, true) -- Si aucun schéma n'est donné (reposant sur search_path), tant pis, on prend les tables de ce nom dans *tous* les schémas.
+			and (nomSchema is null or en.nspname = nomSchema) -- Si aucun schéma n'est donné (reposant sur search_path), tant pis, on prend les tables de ce nom dans *tous* les schémas.
 		;
 		if clesEtrangeresApplicatives is not null then
 			-- À FAIRE: pour les entrées n'ayant pas de schéma, aller chercher dans le schema_path plutôt que de prendre nomSchema.
@@ -172,7 +172,7 @@ $$
 		return query
 			select '-'::text, '-'::char, c.vs, c.vt, c.vc, c.ds, c.dt, c.dc
 			from DEDE_CLES_ETRANGERES_APPLICATIVES c
-			where c.vs = nomSchema and c.vt = nomTable
+			where (nomSchema is null or c.vs = nomSchema) and c.vt = nomTable
 		;
 #endif
 	end;
