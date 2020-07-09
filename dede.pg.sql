@@ -67,7 +67,7 @@ $$
 		
 		-- Vérification des clés étrangères.
 		
-		perform dede_exec('update '||ds||'.'||dt||' set '||dc||' = '||nouveau||' where '||dc||' = '||ancien)
+		perform dede_exec('update '||ds||'.'||dt||' set '||dc||' = '||nouveau||' where '||dc||'::bigint = '||ancien)
 		from dede_dependances(nomTable, clesEtrangeresApplicatives);
 		
 		-- Historisation.
