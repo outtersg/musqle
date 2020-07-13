@@ -130,7 +130,7 @@ $dede$
 						curdi refcursor;
 					begin
 						open curdi for select a.*, b.* from $$||nomTable||$$ a join $$||nomTable||$$ b on a.id = ancien and b.id = nouveau;
-						return query select ancien, 'diff avec '||nouveau||': '||champ||': '||a||' // '||b
+						return query select ancien, 'diff avec '||nouveau||': '||champ||': '||coalesce(a::text, '<null>')||' // '||coalesce(b::text, '<null>')
 							from diff(curdi, saufColonnes);
 						close curdi;
 					end;
