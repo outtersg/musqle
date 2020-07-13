@@ -57,6 +57,10 @@ $$
 	begin
 		-- Vérification des données.
 		
+		if ancien = nouveau then
+			return query select ancien, 'nouvel ID = ancien ID'::text;
+			return;
+		end if;
 		if diffSaufSurColonnes is not null then
 			--return query select * from dede_execre('select * from '||nomTable||'_dede_diff('||ancien||', '||nouveau||execute dedeselect * from dede_diff(nomTable, 
 			return query execute 'select * from '||nomTable||'_dede_diff($1, $2, $3)' using ancien, nouveau, diffSaufSurColonnes;
