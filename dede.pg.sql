@@ -54,6 +54,7 @@ create or replace function dede(nomTable text, ancien bigint, nouveau bigint, de
 $$
 	declare
 		curdi refcursor;
+		req text;
 	begin
 		-- Vérification des données.
 		
@@ -71,6 +72,14 @@ $$
 		
 		-- Vérification des clés étrangères.
 		
+		if detail > 0 then
+			for req in
+				select 'select '||ancien||'::bigint, false, count(*)||'' '||dt||'.'||dc||' reparentés vers '||nouveau||''' from '||ds||'.'||dt||' where '||dc||'::bigint = '||ancien||' having count(*) > 0' req
+				from dede_dependances(nomTable, clesEtrangeresApplicatives)
+			loop
+				return query execute req;
+			end loop;
+		end if;
 		perform dede_exec('update '||ds||'.'||dt||' set '||dc||' = '||nouveau||' where '||dc||'::bigint = '||ancien)
 		from dede_dependances(nomTable, clesEtrangeresApplicatives);
 		
