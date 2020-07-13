@@ -50,7 +50,7 @@ create table DEDE_CLES_ETRANGERES_APPLICATIVES
 drop type if exists dede_champ cascade;
 create type dede_champ as ("table" text, champ text, schema text);
 
-create or replace function dede(nomTable text, ancien bigint, nouveau bigint, clesEtrangeresApplicatives dede_champ[], diffSaufSurColonnes text[]) returns table(id bigint, err text) as
+create or replace function dede(nomTable text, ancien bigint, nouveau bigint, detail smallint, clesEtrangeresApplicatives dede_champ[], diffSaufSurColonnes text[]) returns table(id bigint, err boolean, message text) as
 $$
 	declare
 		curdi refcursor;
@@ -58,12 +58,12 @@ $$
 		-- Vérification des données.
 		
 		if ancien = nouveau then
-			return query select ancien, 'nouvel ID = ancien ID'::text;
+			return query select ancien, true, 'nouvel ID = ancien ID'::text;
 			return;
 		end if;
 		if diffSaufSurColonnes is not null then
 			--return query select * from dede_execre('select * from '||nomTable||'_dede_diff('||ancien||', '||nouveau||execute dedeselect * from dede_diff(nomTable, 
-			return query execute 'select * from '||nomTable||'_dede_diff($1, $2, $3)' using ancien, nouveau, diffSaufSurColonnes;
+			return query execute 'select id, true as err, err as message from '||nomTable||'_dede_diff($1, $2, $3)' using ancien, nouveau, diffSaufSurColonnes;
 			if found then
 				return;
 			end if;
@@ -84,21 +84,32 @@ $$
 	end;
 $$
 language plpgsql;
-comment on function dede(text, bigint, bigint, dede_champ[], text[]) is
+comment on function dede(text, bigint, bigint, smallint, dede_champ[], text[]) is
 $$DÉdoublonnage DÉcontracté
-dede(nomTable text, ancien bigint, nouveau bigint, diffSaufSurColonnes text[])
+dede(nomTable text, ancien bigint, nouveau bigint, detail smallint, clesEtrangeresApplicatives dede_champ[], diffSaufSurColonnes text[])
 Supprime l'entrée <ancien> de la table <nomTable>, au profit de l'entrée <nouveau>.
 
 Sur les tables ayant déclaré une clé étrangère pointant sur notre colonne id, les entrées attachées à <ancien> sont reparentées à <nouveau>.
 L'ancienne entrée est historisée dans <table>CIMETIERE.
+
+Si <detail> > 0, des informations sont renvoyées quant au reprisage effectué.
 
 Si <clesEtrangeresApplicatives> est non null, les tables ainsi listées sont considérées comme des tables liées par clé étrangère "BdD".
 
 Si <diffSaufSurColonnes> est non null, un diff est effectué sur les deux entrées (hors les champs listés dans <diffSaufSurColonnes>):
 si au moins un champ (hors ceux listés dans <diffSaufSurColonnes>) diffère, le dédoublonnage N'EST PAS effectué.
 
-Retour: liste d'erreurs (dont les différences observées si <diffSaufSurColonnes> est définie).$$;
+Retour: liste de (<id>, <err>, <message>):
+- erreurs ayant empêché la fusion (dont les différences observées si <diffSaufSurColonnes> est définie) [<err> = true]
+- détail des opérations si demandé [<err> = false]$$;
 
+create or replace function dede(nomTable text, ancien bigint, nouveau bigint, clesEtrangeresApplicatives dede_champ[], diffSaufSurColonnes text[]) returns table(id bigint, err text) as
+$$
+	select id, message
+	from dede(nomTable, ancien::bigint, nouveau::bigint, 0::smallint, clesEtrangeresApplicatives, diffSaufSurColonnes)
+	where err;
+$$
+language sql;
 create or replace function dede(nomTable text, ancien integer, nouveau integer, clesEtrangeresApplicatives dede_champ[], diffSaufSurColonnes text[]) returns table(id bigint, err text) as
 $$
 	select dede(nomTable, ancien::bigint, nouveau::bigint, clesEtrangeresApplicatives, diffSaufSurColonnes);
