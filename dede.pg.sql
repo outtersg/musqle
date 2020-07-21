@@ -28,6 +28,19 @@
 --         Redondantes
 --   d'une Table
 
+-- Avant d'invoquer ce fichier, possibilité de définir:
+-- DEDE_DIFF_COLONNES_IGNOREES
+--   Nom d'une table où paramétrer les colonnes à ignorer dans la comparaison d'entrées.
+-- DEDE_CLES_ETRANGERES_APPLICATIVES
+--   Nom d'une table où l'on pourra paramétrer des clés étrangères applicatives.
+--   Comme une clé étrangère déclarée en base, Fulbert s'assurera que si une entrée A est supprimée au profit d'une entrée B avec laquelle elle faisait doublon, toute entrée d'une table tierce faisant référence à A sera reparentée vers B.
+-- DEDE_REPARENTEMENTS
+--   Nom d'une table où l'on pourra paramétrer les reparentements qui ne sont pas de simples update.
+--   Par exemple, pour se prémunir d'un duplicate key si la table tierce possède une clé d'unicité sur le champ à reparenter, le reparentement de cette table doit en fait être un dédoublonnement.
+--   Des macros pour alimenter cette table sont définies dans dede.repar.pg.sql.
+-- DEDE_DEROULE
+--   Nom d'une table entreposant le journal détaillé des appels à Fulbert.
+
 #define CIMETIERE _poubelle
 
 #if defined DEDE_DIFF_COLONNES_IGNOREES
