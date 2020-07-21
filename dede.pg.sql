@@ -30,6 +30,17 @@
 
 #define CIMETIERE _poubelle
 
+#if defined DEDE_DIFF_COLONNES_IGNOREES
+#if `select count(*) from pg_tables where tablename = 'DEDE_DIFF_COLONNES_IGNOREES'` = 0
+create table DEDE_DIFF_COLONNES_IGNOREES
+(
+	s text,
+	t text,
+	c text
+);
+#endif
+#endif
+
 #if defined(DEDE_CLES_ETRANGERES_APPLICATIVES)
 #if `select count(*) from pg_tables where tablename = 'DEDE_CLES_ETRANGERES_APPLICATIVES'` = 0
 create table DEDE_CLES_ETRANGERES_APPLICATIVES
@@ -93,6 +104,9 @@ $$
 			return;
 		end if;
 		if diffSaufSurColonnes is not null then
+#if defined DEDE_DIFF_COLONNES_IGNOREES
+			diffSaufSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t))||diffSaufSurColonnes;
+#endif
 			--return query select * from dede_execre('select * from '||nomTable||'_dede_diff('||ancien||', '||nouveau||execute dedeselect * from dede_diff(nomTable, 
 			return query execute 'select id, true as err, err as message from '||nomTable||'_dede_diff($1, $2, $3)' using ancien, nouveau, diffSaufSurColonnes;
 			if found then
