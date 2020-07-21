@@ -86,6 +86,12 @@ $$;
 #endif
 #endif
 
+#if defined(DEDE_DEROULE)
+#if `select count(*) from pg_tables where tablename = 'DEDE_DEROULE'` = 0
+create table DEDE_DEROULE (q timestamp, t text, ref bigint, doublon bigint, err boolean, message text);
+#endif
+#endif
+
 #include diff.pg.sql
 
 drop type if exists dede_champ cascade;
@@ -179,6 +185,26 @@ language sql;
 create or replace function dede(nomTable text, ancien integer, nouveau integer, clesEtrangeresApplicatives dede_champ[], diffSaufSurColonnes text[]) returns table(id bigint, err text) as
 $$
 	select dede(nomTable, ancien::bigint, nouveau::bigint, clesEtrangeresApplicatives, diffSaufSurColonnes);
+$$
+language sql;
+
+create or replace function dedede(nomTable text, ancien bigint, nouveau bigint) returns setof bigint as
+$$
+	with d as
+	(
+		select * from dede(nomTable, ancien, nouveau, 1::smallint, null, '{}')
+	),
+#if defined(DEDE_DEROULE)
+	de as
+	(
+		insert into DEDE_DEROULE select clock_timestamp(), nomTable, nouveau, d.* from d returning ref, doublon, err
+	)
+#else
+	de as (select err from d where err)
+#endif
+	select distinct d.id
+	from d left join de on de.err
+	where de.err is null;
 $$
 language sql;
 
