@@ -45,6 +45,36 @@ create table DEDE_CLES_ETRANGERES_APPLICATIVES
 #endif
 #endif
 
+#if defined(DEDE_REPARENTEMENTS)
+#if `select count(*) from pg_tables where tablename = 'DEDE_REPARENTEMENTS'` = 0
+create table DEDE_REPARENTEMENTS
+(
+	id serial primary key,
+	champ text,
+	req text
+);
+comment on DEDE_REPARENTEMENTS is
+$$Liste les reparentements spéciaux.
+  champ
+    <schema>.<table>.<champ> cible
+  req
+    Requête à appliquer. Y seront remplacées les variables suivantes:
+      @ds Schéma de la cible
+      @dt Table de la cible
+      @dc Champ de la cible
+      @ancien Valeur à remplacer
+      @nouveau Remplacement
+    Exemple de req pour éviter les duplicate key si le champ cible sert de clé unique en combinaison avec un champ 'autre':
+    L'ancienne entrée est modifiée (classiquement), à moins qu'il existe déjà une entrée qui ferait doublon avec la nouvelle valeur, auquel cas l'ancienne est tout bonnement supprimée.
+      with
+      anciens as (select row_number() over() id, @dc, autre from @ds.@dt where @dc = @ancien), -- Ceux qui bougent.
+      existants as (delete from @ds.@dt using anciens a where a.@dc = @dt.@dc and a.autre = @dt.autre returning a.id), -- Les à reparenter pour lesquels la destination est prise (même clé, donc un reparentement donnerait une duplicate key).
+      reparentes as (select a.* from anciens a left join existants e on e.id = a.id where e.id is null) -- Ceux qu'il reste à reparenter.
+      update @ds.@dt set @dc = @nouveau from reparentes a where a.@dc = @dt.@dc and a.autre = @dt.autre
+$$;
+#endif
+#endif
+
 #include diff.pg.sql
 
 drop type if exists dede_champ cascade;
@@ -80,8 +110,21 @@ $$
 				return query execute req;
 			end loop;
 		end if;
-		perform dede_exec('update '||ds||'.'||dt||' set '||dc||' = '||nouveau||' where '||dc||'::bigint = '||ancien)
-		from dede_dependances(nomTable, clesEtrangeresApplicatives);
+		perform dede_exec
+		(
+			coalesce
+			(
+#if defined(DEDE_REPARENTEMENTS)
+				replace(replace(replace(replace(replace(r.req, '@ds', ds), '@dt', dt), '@dc', dc), '@ancien', ancien::text), '@nouveau', nouveau::text),
+#endif
+				'update '||ds||'.'||dt||' set '||dc||' = '||nouveau||' where '||dc||'::bigint = '||ancien
+			)
+		)
+		from dede_dependances(nomTable, clesEtrangeresApplicatives)
+#if defined(DEDE_REPARENTEMENTS)
+		left join DEDE_REPARENTEMENTS r on r.champ in (ds||'.'||dt||'.'||dc, dt||'.'||dc)
+#endif
+		;
 		
 		-- Historisation.
 		
