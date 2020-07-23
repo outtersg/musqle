@@ -134,6 +134,11 @@ $$
 			end if;
 		end if;
 		
+		-- À partir de là on est sûrs de vouloir exécuter.
+		if detail > 0 then
+			return query select ancien, false, null::text;
+		end if;
+		
 		-- Vérification des clés étrangères.
 		
 		if detail > 0 then
