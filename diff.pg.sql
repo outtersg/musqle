@@ -32,6 +32,7 @@ $$
 $$
 language plpgsql;
 
+-- NOTE: cette fonction ne fonctionne qu'à partir de PostgreSQL 9.3 (fonction JSON).
 create or replace function diff(trucs refcursor, sauf text[]) returns table(ida bigint, idb bigint, champ text, a text, b text) as
 $$
 	declare
@@ -53,7 +54,11 @@ $$
 			-- https://stackoverflow.com/a/8767450/1346819
 			ab := row_to_json(l);
 			return query
+#if `select count(*) from version() where version ~ '^PostgreSQL ([0-8]\.|9\.[0-3]\.)'` == 1
+				with tab as (select row_number() over() - 1 as col, c, v from json_each_text(ab) tab(c, v)),
+#else
 				with tab as (select col1 - 1 as col, c, v from json_each_text(ab) with ordinality tab(c, v, col1)),
+#endif
 				ids as (select a.v::bigint ida, b.v::bigint idb from tab a join tab b on a.col = 0 and b.col = ncols)
 				select ids.ida, ids.idb, a.c, a.v, b.v
 				from tab a
