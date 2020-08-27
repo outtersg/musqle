@@ -24,6 +24,17 @@
 -- Le curseur est ce qu'il y a de plus efficace, car il nous permet de faire une première passe pour récupérer le nom des colonnes, avant de boucler au plus rapide.
 -- Chaque ligne de n champs doit comporter deux moitiés, chaque moitié représentant un enregistrement à comparer, dont l'ID est conventionnellement attendu en première position de la moitié.
 -- Ainsi la comparaison de deux entrées A et B d'une table (id, num, descr) doit arriver sous la forme idA, numA, descrA, idB, numB, descB.
+create or replace function diff(req text) returns table(ida bigint, idb bigint, champ text, a text, b text) language plpgsql as
+$$
+	declare
+		trucs refcursor;
+	begin
+		open trucs for execute req;
+		return query select * from diff(trucs, null);
+		close trucs;
+	end;
+$$;
+
 create or replace function diff(trucs refcursor) returns table(ida bigint, idb bigint, champ text, a text, b text) as
 $$
 	begin
