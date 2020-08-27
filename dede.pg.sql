@@ -78,7 +78,7 @@ create table DEDE_REPARENTEMENTS
 	champ text,
 	req text
 );
-comment on DEDE_REPARENTEMENTS is
+comment on table DEDE_REPARENTEMENTS is
 $$Liste les reparentements spéciaux.
   champ
     <schema>.<table>.<champ> cible
