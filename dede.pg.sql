@@ -326,10 +326,10 @@ $$
 language plpgsql;
 
 -- Exec and REturn.
-create or replace function dede_execre(req text) returns record as
+create or replace function dede_execre(req text) returns setof record as
 $$
 	begin
-		return execute req;
+		return query execute req;
 	end;
 $$
 language plpgsql;
