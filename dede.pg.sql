@@ -325,6 +325,8 @@ $$
 $$
 language plpgsql;
 
+#if 0
+-- Ce qui suit ne fonctionne pas: a column definition list is required for functions returning "record"
 -- Exec and REturn.
 create or replace function dede_execre(req text) returns setof record as
 $$
@@ -333,5 +335,6 @@ $$
 	end;
 $$
 language plpgsql;
+#endif
 
 -- À FAIRE: dede_majTable en cas de modification de la table source dans le schéma: la table cimetière doit suivre.
