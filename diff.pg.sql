@@ -96,5 +96,7 @@ Paramètres:
 			select * from diff('ah');
 			close ah;
 			rollback;
+		Il existe une version de la fonction qui permet de passer la requête en paramètre:
+			select * from diff('select a.*, b.* from t a join t b on a.num = b.num and b.id > a.id');
 	sauf
 		Si mentionné, exclut des champs de la comparaison.$$;
