@@ -42,7 +42,7 @@
 -- DEDE_DEROULE
 --   Nom d'une table entreposant le journal détaillé des appels à Fulbert.
 
-#define CIMETIERE _poubelle
+#define DEDE_CIMETIERE _poubelle
 
 #if defined DEDE_DIFF_COLONNES_IGNOREES
 #if `select count(*) from pg_tables where tablename = 'DEDE_DIFF_COLONNES_IGNOREES'` = 0
@@ -106,6 +106,11 @@ create table DEDE_DEROULE (q timestamp, t text, ref bigint, doublon bigint, err 
 #endif
 #endif
 
+#if defined(DEDE_CIMETIERE) and not defined(DEDE_CIMETIERE_COLS)
+#define DEDE_CIMETIERE_COLS nouveau
+#define DEDE_CIMETIERE_COLS_DEF 0::bigint pivot
+#endif
+
 #include diff.pg.sql
 
 drop type if exists dede_champ cascade;
@@ -167,7 +172,7 @@ $$
 		
 		-- Historisation.
 		
-		perform dede_exec('insert into '||nomTable||'CIMETIERE select '||nouveau||', * from '||nomTable||' where id in ('||ancien||')');
+		perform dede_exec('insert into '||nomTable||'DEDE_CIMETIERE select '||DEDE_CIMETIERE_COLS||', * from '||nomTable||' where id in ('||ancien||')');
 		
 		-- Suppression.
 		
@@ -181,7 +186,7 @@ dede(nomTable text, ancien bigint, nouveau bigint, detail smallint, clesEtranger
 Supprime l'entrée <ancien> de la table <nomTable>, au profit de l'entrée <nouveau>.
 
 Sur les tables ayant déclaré une clé étrangère pointant sur notre colonne id, les entrées attachées à <ancien> sont reparentées à <nouveau>.
-L'ancienne entrée est historisée dans <table>CIMETIERE.
+L'ancienne entrée est historisée dans <table>DEDE_CIMETIERE.
 
 Si <detail> > 0, des informations sont renvoyées quant au reprisage effectué.
 
@@ -233,8 +238,8 @@ $dede$
 		perform dede_exec
 		(
 			$$
-				create table $$||nomTable||'CIMETIERE'||$$ as
-					select 0::bigint pivot, * from $$||nomTable||$$ limit 0;
+				create table $$||nomTable||'DEDE_CIMETIERE'||$$ as
+					select DEDE_CIMETIERE_COLS_DEF, * from $$||nomTable||$$ limit 0;
 				create function $$||nomTable||$$_dede_diff(ancien bigint, nouveau bigint, saufColonnes text[]) returns table(id bigint, err text) as
 				$ddd$
 					declare
