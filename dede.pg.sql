@@ -41,6 +41,20 @@
 --   Des macros pour alimenter cette table sont définies dans dede.repar.pg.sql.
 -- DEDE_DEROULE
 --   Nom d'une table entreposant le journal détaillé des appels à Fulbert.
+-- DEDE_CIMETIERE
+--   Suffixe accolé à un nom de table pour obtenir le nom de la table d'historisation des entrées supprimées par dede.
+--   La table cimetière doit posséder un certain nombre de colonnes techniques pour consignation de la suppression, suivies d'une copie des colonnes de la table d'origine (il faut donc répercuter sur la table cimetière tout ajout ou changement de colonne dans la table source).
+--   La fonction dede_init() peut créer la table cimetière si elle n'existe pas.
+-- DEDE_CIMETIERE_COLS, DEDE_CIMETIERE_COLS_DEF
+--   Colonnes de préambule des tables DEDE_CIMETIERE.
+--   Si la table d'historisation est créée par ailleurs, seul DEDE_CIMETIERE_COLS est à définir (DEDE_CIMETIERE_COLS_DEF ne sert qu'à dede_init()).
+--   DEDE_CIMETIERE_COLS:
+--     Valeurs à mettre dans les premières colonnes "techniques" de la table cimetière.
+--     Le champ "nouveau" peut être mentionné pour obtenir l'ID de l'entrée au profit de laquelle la fusion s'effectue.
+--   DEDE_CIMETIERE_COLS_DEF:
+--     Définition des colonnes pour initialisation de la table via dede_init (qui fait un select DEDE_CIMETIERE_COLS_DEF, * from <table source> limit 0;).
+--     Pour chaque colonne technique on mentionne donc une expression select donnant son type et son nom, ex.:
+--     #define DEDE_CIMETIERE_COLS_DEF 0::bigint as id_remplacant
 
 #define DEDE_CIMETIERE _poubelle
 
