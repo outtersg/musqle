@@ -184,13 +184,9 @@ $$
 #endif
 		;
 		
-		-- Historisation.
+		-- Historisation et suppression.
 		
-		perform dede_exec('insert into '||nomTable||'DEDE_CIMETIERE select '||DEDE_CIMETIERE_COLS||', * from '||nomTable||' where id in ('||ancien||')');
-		
-		-- Suppression.
-		
-		perform dede_exec('delete from '||nomTable||' where id in ('||ancien||')');
+		perform dede_exec('select '||nomTable||'DEDE_CIMETIERE('||ancien||', '||nouveau||')');
 	end;
 $$
 language plpgsql;
@@ -266,6 +262,12 @@ $dede$
 					end;
 				$ddd$
 				language plpgsql;
+				create function $$||nomTable||$$DEDE_CIMETIERE(ancien bigint, nouveau bigint) returns void language sql as
+				$ddd$
+					insert into $$||nomTable||$$DEDE_CIMETIERE
+						select DEDE_CIMETIERE_COLS, * from $$||nomTable||$$ where id in (ancien);
+					delete from $$||nomTable||$$ where id in (ancien);
+				$ddd$;
 			$$
 		);
 	end;
