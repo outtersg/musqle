@@ -1,3 +1,13 @@
+create temporary table t_ignore
+(
+	s text,
+	t text,
+	c text
+);
+#define DETROU_COLONNES_IGNOREES t_ignore
+-- On peut tester la bonne ignorance d'une colonne:
+--insert into t_ignore (t, c) values ('t', 'nombre');
+
 #include ../detroussages.pg.sql
 
 create temporary table t(id bigserial primary key, num varchar(15), truc text, nombre integer, quand timestamp);
