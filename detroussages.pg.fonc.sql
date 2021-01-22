@@ -56,6 +56,11 @@ with
 			for_COLONNE_in_cols
 			, coalesce(_source.COLONNE, daccord.COLONNE) COLONNE
 			done_COLONNE_in_cols
+			, ''
+			for_COLONNE_in_cols
+			||case when _source.COLONNE is null and daccord.COLONNE is not null then ' COLONNE' else '' end
+			done_COLONNE_in_cols
+			_modifs
 		from daccord join $$||nomTable||$$ _source on _source.id = any(ids)
 		where false
 		-- Ne sélectionnons l'entrée que si au moins un de ses champs va être modifié.
@@ -73,5 +78,5 @@ with
 			done_COLONNE_in_cols
 		from afaire
 		where _source.id = afaire.id
-		returning afaire.tache, _source.id, null::text -- À FAIRE: remonter en dernier champ la liste des champs complétés.
+		returning afaire.tache, _source.id, 'détroué:'||_modifs
 	)
