@@ -1,10 +1,10 @@
 #!/usr/bin/env php
-tache	id	champs
-1	1	
-1	2	
-5	3	
-3	5	
-4	8	
+tache	id	info
+1	1	détroué: nombre
+1	2	détroué: truc
+5	3	détroué: truc nombre
+3	5	détroué: truc
+4	8	détroué: quand
 id	num	truc	nombre	quand
 1	1 partout	coucou	123	
 2	1 partout	coucou	123	
