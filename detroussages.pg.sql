@@ -26,7 +26,7 @@
 -- À FAIRE
 #endif
 
-create or replace function detroussages(nomTable text, groupes text[], perso text) returns table(tache bigint, id bigint, champs text[]) language plpgsql as
+create or replace function detroussages(nomTable text, groupes text[], perso text) returns table(tache bigint, id bigint, info text) language plpgsql as
 $$
 	begin
 		execute detroussages_fonc_table(nomTable, perso);
@@ -51,7 +51,7 @@ $dft$
 		return
 			$$
 -- À FAIRE: décoder en dur le nom de la fonction générée, afin d'éviter les interblocages entre sessions faisant simultanément des detroussages.
-create or replace function _detroussages_fonc(groupes text[]) returns table(tache bigint, id bigint, champs text[]) language sql as
+create or replace function _detroussages_fonc(groupes text[]) returns table(tache bigint, id bigint, info text) language sql as
 $df$
 #include detroussages.pg.fonc.sql
 select * from maj;

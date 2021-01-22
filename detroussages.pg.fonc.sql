@@ -73,5 +73,5 @@ with
 			done_COLONNE_in_cols
 		from afaire
 		where _source.id = afaire.id
-		returning afaire.tache, _source.id, null::text[] -- À FAIRE: remonter la liste des champs complétés.
+		returning afaire.tache, _source.id, null::text -- À FAIRE: remonter en dernier champ la liste des champs complétés.
 	)
