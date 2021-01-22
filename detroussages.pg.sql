@@ -23,7 +23,14 @@
 -- Est considéré comme un trou une colonne à null (à moins que le null n'y soit référencé comme significatif)
 
 #if defined(DETROU_COLONNES_IGNOREES)
--- À FAIRE
+#if `select count(*) from pg_tables where tablename = 'DETROU_COLONNES_IGNOREES'` = 0
+create table DETROU_COLONNES_IGNOREES
+(
+	s text,
+	t text,
+	c text
+);
+#endif
 #endif
 
 create or replace function detroussages(nomTable text, groupes text[], perso text) returns table(tache bigint, id bigint, info text) language plpgsql as
@@ -44,7 +51,9 @@ $dft$
 		where nomTable in (table_name, table_schema||'.'||table_name)
 		and is_nullable = 'YES'
 		and column_name not in ('id')
-		-- À FAIRE: ajouter les exclusions
+#if defined(DETROU_COLONNES_IGNOREES)
+		and column_name not in (select i.c from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t))
+#endif
 		-- À FAIRE: permettre, colonne par colonne, d'avoir une autre valeur "insignifiante" (ex.: '', '-').
 		;
 		
