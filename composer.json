@@ -1,0 +1,10 @@
+{
+	"name": "gui/musqle",
+	"description": "Mes Utilitaires SQL Éclectiques",
+	"version": "0.0.x-dev",
+	"license": "MIT",
+	"suggest":
+	{
+		"gui/sqleur": "préprocesseur de SQL"
+	}
+}
