@@ -95,7 +95,7 @@ with
 		insert into DETROU_DEROULE
 			select
 				maj0.q,
-				'''$$||nomTable||$$''',
+				'$$||nomTable||$$',
 				case when maj0.id = taches.ids[1] then maj0.id else null end,
 				case when maj0.id <> taches.ids[1] then maj0.id else null end,
 				false,
