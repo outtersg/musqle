@@ -68,7 +68,11 @@ with
 		or (_source.COLONNE is null and daccord.COLONNE is not null)
 		done_COLONNE_in_cols
 	),
+#if defined(DETROU_DEROULE)
+	maj0 as
+#else
 	maj as
+#endif
 	(
 		update $$||nomTable||$$ _source
 		set
@@ -78,5 +82,25 @@ with
 			done_COLONNE_in_cols
 		from afaire
 		where _source.id = afaire.id
-		returning afaire.tache, _source.id, 'détroué:'||_modifs
+		returning afaire.tache, _source.id, 'détroué:'||_modifs info
+#if defined(DETROU_DEROULE)
+		, clock_timestamp() q
+	),
+	maj as
+	(
+		select tache, id, info from maj0
+	),
+	majj as
+	(
+		insert into DETROU_DEROULE
+			select
+				maj0.q,
+				'''$$||nomTable||$$''',
+				case when maj0.id = taches.ids[1] then maj0.id else null end,
+				case when maj0.id <> taches.ids[1] then maj0.id else null end,
+				false,
+				maj0.info
+			from taches join maj0 on taches.tache = maj0.tache
+		returning coalesce(ref, doublon)
+#endif
 	)

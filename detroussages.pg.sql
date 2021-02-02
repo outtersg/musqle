@@ -33,6 +33,12 @@ create table DETROU_COLONNES_IGNOREES
 #endif
 #endif
 
+#if defined(DETROU_DEROULE)
+#if `select count(*) from pg_tables where tablename = 'DETROU_DEROULE'` = 0
+create table DETROU_DEROULE (q timestamp, t text, ref bigint, doublon bigint, err boolean, message text);
+#endif
+#endif
+
 create or replace function detroussages(nomTable text, groupes text[], perso text) returns table(tache bigint, id bigint, info text) language plpgsql as
 $$
 	begin
