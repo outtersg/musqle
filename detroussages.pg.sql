@@ -48,6 +48,11 @@ $$
 	end;
 $$;
 
+create or replace function detroussages(nomTable text, id0 bigint, id1 bigint) returns table(tache bigint, id bigint, info text) language sql as
+$$
+	select * from detroussages(nomTable, array[id0||' '||id1], null);
+$$;
+
 create or replace function detroussages_fonc_table(nomTable text, perso text) returns text language plpgsql as
 $dft$
 	declare
