@@ -32,6 +32,8 @@
 -- Avant d'invoquer ce fichier, possibilité de définir:
 -- DEDE_DIFF_COLONNES_IGNOREES
 --   Nom d'une table où paramétrer les colonnes à ignorer dans la comparaison d'entrées.
+-- DEDE_DIFF_COLONNES_IGNOREES_OPTIONS
+--   Filtre éventuel sur la précédente table (ex.: "and s is not null" pour ignorer les entrées sans schéma)
 -- DEDE_CLES_ETRANGERES_APPLICATIVES
 --   Nom d'une table où l'on pourra paramétrer des clés étrangères applicatives.
 --   Comme une clé étrangère déclarée en base, Fulbert s'assurera que si une entrée A est supprimée au profit d'une entrée B avec laquelle elle faisait doublon, toute entrée d'une table tierce faisant référence à A sera reparentée vers B.
@@ -59,12 +61,18 @@
 #define DEDE_CIMETIERE _poubelle
 
 #if defined DEDE_DIFF_COLONNES_IGNOREES
+#if ! defined(DEDE_DIFF_COLONNES_IGNOREES_OPTIONS)
+#define DEDE_DIFF_COLONNES_IGNOREES_OPTIONS
+#endif
 #if `select count(*) from pg_tables where tablename = 'DEDE_DIFF_COLONNES_IGNOREES'` = 0
 create table DEDE_DIFF_COLONNES_IGNOREES
 (
 	s text,
 	t text,
 	c text
+#if DEDE_DIFF_COLONNES_IGNOREES_OPTIONS
+	, options text
+#endif
 );
 #endif
 #endif
@@ -144,7 +152,7 @@ $$
 		end if;
 		if diffSaufSurColonnes is not null then
 #if defined DEDE_DIFF_COLONNES_IGNOREES
-			diffSaufSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t))||diffSaufSurColonnes;
+			diffSaufSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_IGNOREES_OPTIONS)||diffSaufSurColonnes;
 #endif
 			--return query select * from dede_execre('select * from '||nomTable||'_dede_diff('||ancien||', '||nouveau||execute dedeselect * from dede_diff(nomTable, 
 			return query execute 'select id, true as err, err as message from '||nomTable||'_dede_diff($1, $2, $3)' using ancien, nouveau, diffSaufSurColonnes;
