@@ -67,7 +67,7 @@ $$
 	begin
 		select split_part(nomTable, '.', 1) into nomSchema;
 		if not exists(select 1 from information_schema.schemata where schema_name = nomSchema) then
-			execute format('create schema %s', nomSchema);
+			execute format('create schema %s; grant usage on schema %s to public;', nomSchema, nomSchema);
 			-- Et nous sommes supposés tourner en tant que super-utilisateur, qui finira donc proprio du schéma avec aucun droit pour les autres.
 		else
 			-- À FAIRE: s'assurer qu'il est bien configuré en droits, ou au moins péter une exception s'il ne nous appartient pas.
