@@ -18,6 +18,31 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
+#if 0
+--------------------------------------------------------------------------------
+-- Pseudo-sudo
+--
+-- Exemple d'utilisation:
+-- permettre à n'importe qui de créer toute extension (de nom pas trop louche) du moment qu'il l'attache à un schéma qu'il détient.
+insert into admin.sudoers (command, cond) values ('create extension [a-z]+ schema ([_a-z]+)', 'exists(select 1 from information_schema.schemata s where s.schema_name = ''\1'' and s.schema_owner = session_user)');
+-- notons qu'en remplaçant le premier [a-z]+ par une liste blanche prédéfinie, on émuler les "trusted extensions" de PostgreSQL 13.
+--------------------------------------------------------------------------------
+-- Test du create extension ci-dessus:
+-- Constitution du jeu de test:
+create user toto password 'toto';
+create schema toto;
+alter schema toto owner to toto;
+-- Et pour tester, en PASSWORD=toto psql -U toto:
+create extension hstore schema toto; -- Plante en "must be superuser".
+select admin.sudo('create extension hstore schema public'); -- Renvoie false.
+select admin.sudo('create extension hstore schema toto'); -- Renvoie true.
+select admin.sudo('create extension hstore schema toto'); -- Pète en "already exists", montrant que la précédente est passée.
+-- Puis évidemment un peu de ménage en superuser:
+drop schema toto;
+drop user toto;
+--------------------------------------------------------------------------------
+#endif
+
 -- Emplacement de la table de paramétrage ("sudoers"):
 -- Veillez à utiliser un schéma sur lequel seul le super-utilisateur peut taper (insert, mais aussi drop / create).
 #if !defined(SUDOERS)
