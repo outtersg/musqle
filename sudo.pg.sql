@@ -29,6 +29,9 @@
 -- À FAIRE: traces. Bien noter tout de même que le système (de trace dans une table) est faillible, puisqu'il suffit à l'appelant de rollbacker pour ne pas être fliqué (l'entrée en table traces disparaîtrait avec le rollback).
 -- À FAIRE: possibilité de renvoyer le résultat d'un sudo select?
 
+-- Reposant sur des fonctions temporaires pour construire notre environnement, on doit se prémunir d'une concurrence critique où notre fonction, potentiellement dans public, serait remplacée par un petit malin avant qu'on ne l'appelle: donc on transactionne.
+begin;
+
 create or replace function _sudo_def(nomFonctionSudo text, nomTableSudoers text, nomTableTraces text) returns text language sql as
 $bla$
 	select
@@ -91,3 +94,5 @@ drop function _sudo_verifierTable(text, text);
 drop function _sudo_verifierSchemaDe(text);
 drop function _sudo_installer(text, text);
 drop function _sudo_def(text, text, text);
+
+commit;
