@@ -36,7 +36,7 @@ $bla$
 		-- Balancer une exception eût été mieux, cependant cela nous garantit qu'on perd notre trace (rollback implicite).
 		-- Alors qu'en renvoyant un booléen, la trace n'est perdue que si l'appelant oublie de rollbacker sur retour false.
 		-- L'appelant a donc toujours la possibilité de se masquer, mais uniquement sur furtivité volontaire (certes ce sont ceux-là qu'on voudrait intercepter avant tout…).
-		create or replace function $$||nomFonctionSudo||$$(commande text) returns boolean language plpgsql as
+		create or replace function $$||nomFonctionSudo||$$(commande text) returns boolean language plpgsql SECURITY DEFINER as
 		$corps$
 			begin
 				
