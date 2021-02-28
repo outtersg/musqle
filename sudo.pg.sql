@@ -66,8 +66,28 @@ $bla$
 		-- L'appelant a donc toujours la possibilité de se masquer, mais uniquement sur furtivité volontaire (certes ce sont ceux-là qu'on voudrait intercepter avant tout…).
 		create or replace function $$||nomFonctionSudo||$$(commande text) returns boolean language plpgsql SECURITY DEFINER as
 		$corps$
+			declare
+				valide text;
+				cond text;
 			begin
+				with v as
+				(
+					select
+						regexp_matches(commande, '^'||s.command||'$', coalesce(s.flags, '')) valide,
+						'^'||s.command||'$' expr,
+						s.cond
+					from $$||nomTableSudoers||$$ s
+				)
+				select commande
+				into valide
+				from v
+				where v.cond is null or $$||nomFonctionExecBooleen||$$(regexp_replace(commande, v.expr, v.cond))
+				limit 1;
+				if not found then return false; end if;
 				
+				execute valide;
+				
+				return true;
 			end;
 		$corps$;
 		
