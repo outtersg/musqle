@@ -57,7 +57,7 @@ drop user toto;
 -- Reposant sur des fonctions temporaires pour construire notre environnement, on doit se prémunir d'une concurrence critique où notre fonction, potentiellement dans public, serait remplacée par un petit malin avant qu'on ne l'appelle: donc on transactionne.
 begin;
 
-create or replace function _sudo_def(nomFonctionSudo text, nomTableSudoers text, nomTableTraces text) returns text language sql as
+create or replace function _sudo_def(nomFonctionSudo text, nomFonctionExecBooleen text, nomTableSudoers text, nomTableTraces text) returns text language sql as
 $bla$
 	select
 	$$
@@ -68,6 +68,16 @@ $bla$
 		$corps$
 			begin
 				
+			end;
+		$corps$;
+		
+		create or replace function $$||nomFonctionExecBooleen||$$(commande text) returns boolean language plpgsql as
+		$corps$
+			declare
+				res boolean;
+			begin
+				execute format('select %s', commande) into res;
+				return res;
 			end;
 		$corps$;
 	$$;
@@ -81,7 +91,7 @@ $$
 		-- À FAIRE: si nomTable ne contient pas de ., le préfixer du premier composant du search_path. Mais bon ce n'est pas bien de passer par un nom non qualifié: ça pourrait valoir un raise exception.
 		select _sudo_verifierSchemaDe(nomTableSudoers) into nomSchema;
 		perform _sudo_verifierTable(nomTableSudoers, 'command text, flags text, cond text');
-		execute _sudo_def(nomSchema||'.sudo', nomTableSudoers, nomTableTraces);
+		execute _sudo_def(nomSchema||'.sudo', nomSchema||'.execb', nomTableSudoers, nomTableTraces);
 	end;
 $$;
 
@@ -118,6 +128,6 @@ select _sudo_installer(SUDOERS, SUDO_TRACES);
 drop function _sudo_verifierTable(text, text);
 drop function _sudo_verifierSchemaDe(text);
 drop function _sudo_installer(text, text);
-drop function _sudo_def(text, text, text);
+drop function _sudo_def(text, text, text, text);
 
 commit;
