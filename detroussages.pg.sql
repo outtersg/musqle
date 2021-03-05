@@ -79,3 +79,10 @@ $df$;
 			$$;
 	end;
 $dft$;
+
+-- La fonction reposant largement sur min() et max(), on s'assure leur présence pour tous les types standard.
+#if `select count(1) from pg_aggregate a join pg_proc p on p.oid = aggfnoid join pg_type t on t.oid = aggtranstype where proname in ('min', 'max') and typname = 'bool'` < 2
+-- https://stackoverflow.com/a/44004157/1346819
+create aggregate max(boolean) (sfunc = boolor_statefunc, stype = boolean);
+create aggregate min(boolean) (sfunc = booland_statefunc, stype = boolean);
+#endif
