@@ -308,13 +308,14 @@ $$
 			confdeltype::char,
 			nomSchema,
 			nomTable,
-			t.relname::text,
+			tcol.attname::text,
 			den.nspname::text,
 			dest.relname::text,
 			col.attname::text
 		from pg_constraint c
 			join pg_class t on t.oid = c.confrelid
 			join pg_namespace en on en.oid = t.relnamespace
+			join pg_attribute tcol on tcol.attrelid = c.confrelid and tcol.attnum = any(c.confkey)
 			join pg_class dest on dest.oid = c.conrelid
 			join pg_namespace den on den.oid = dest.relnamespace
 			left join unnest(c.conkey) as champs(num) on true
