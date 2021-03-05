@@ -318,8 +318,7 @@ $$
 			join pg_attribute tcol on tcol.attrelid = c.confrelid and tcol.attnum = any(c.confkey)
 			join pg_class dest on dest.oid = c.conrelid
 			join pg_namespace den on den.oid = dest.relnamespace
-			left join unnest(c.conkey) as champs(num) on true
-			left join pg_attribute col on col.attrelid = c.conrelid and col.attnum = champs.num
+			join pg_attribute col on col.attrelid = c.conrelid and col.attnum = any(c.conkey)
 		where contype = 'f'
 			and t.relname = nomTable
 			and (nomSchema is null or en.nspname = nomSchema) -- Si aucun schéma n'est donné (reposant sur search_path), tant pis, on prend les tables de ce nom dans *tous* les schémas.
