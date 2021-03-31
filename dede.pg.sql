@@ -263,18 +263,6 @@ $dede$
 			$$
 				create table $$||nomTable||'DEDE_CIMETIERE'||$$ as
 					select DEDE_CIMETIERE_COLS_DEF, * from $$||nomTable||$$ limit 0;
-				create function $$||nomTable||$$_dede_diff(ancien bigint, nouveau bigint, saufColonnes text[]) returns table(id bigint, err text) as
-				$ddd$
-					declare
-						curdi refcursor;
-					begin
-						open curdi for select a.*, b.* from $$||nomTable||$$ a join $$||nomTable||$$ b on a.id = ancien and b.id = nouveau;
-						return query select ancien, 'diff avec '||nouveau||': '||champ||': '||coalesce(a::text, '<null>')||' // '||coalesce(b::text, '<null>')
-							from diff(curdi, saufColonnes);
-						close curdi;
-					end;
-				$ddd$
-				language plpgsql;
 				create function $$||nomTable||$$DEDE_CIMETIERE(ancien bigint, nouveau bigint) returns void language sql as
 				$ddd$
 					insert into $$||nomTable||$$DEDE_CIMETIERE
