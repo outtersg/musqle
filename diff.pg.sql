@@ -43,13 +43,19 @@ $$
 $$
 language plpgsql;
 
+-- À FAIRE?: implémenter la fonction sans nullToleres comme un simple appel à celle avec.
+-- En effet les performances, crainte initiale de l'ajout de critère, ne semblent pas affectées:
+-- entre -0,3 et 0,8 s de pénalité pour la version "longue" sur une requête de 13 s, en moyenne 0,6 s, soit 5%.
+--   begin; select diff('select 0 id, 123 m, 456 n, 1, 456, 789', null, '{n}') from generate_series(0, 99999); select clock_timestamp() - now(); rollback;
+--   (et la même chose sans le , null, '{n}' pour comparer)
+
 create or replace function _diff_fonc(avecNullToleres boolean) returns text language sql as
 $F$
 	select
 	$€$
 
 -- NOTE: cette fonction ne fonctionne qu'à partir de PostgreSQL 9.3 (fonction JSON).
-create or replace function diff(trucs refcursor, sauf text[]) returns table(ida bigint, idb bigint, champ text, a text, b text) as
+create or replace function diff(trucs refcursor, sauf text[]$€$||case when avecNullToleres then $€$, nullToleres text[]$€$ else '' end||$€$) returns table(ida bigint, idb bigint, champ text, a text, b text) as
 $$
 	declare
 		l record;
@@ -78,7 +84,11 @@ $$
 				ids as (select a.v::bigint ida, b.v::bigint idb from tab a join tab b on a.col = 0 and b.col = ncols)
 				select ids.ida, ids.idb, a.c, a.v, b.v
 				from tab a
-				join tab b on b.col = a.col + ncols and b.v is distinct from a.v
+				join tab b on b.col = a.col + ncols and
+				(
+					b.v is distinct from a.v
+					$€$||case when avecNullToleres then $€$and not (a.c = any(nullToleres) and a.v is null)$€$ else '' end||$€$
+				)
 				join ids on true
 				where a.col > 0 and a.c = any(cols)
 			;
@@ -97,6 +107,7 @@ create or replace function _diff_init() returns void language plpgsql as
 $$
 	begin
 		execute _diff_fonc(false);
+		execute _diff_fonc(true);
 	end;
 $$;
 select _diff_init();
@@ -119,3 +130,14 @@ Paramètres:
 			select * from diff('select a.*, b.* from t a join t b on a.num = b.num and b.id > a.id');
 	sauf
 		Si mentionné, exclut des champs de la comparaison.$$;
+comment on function diff(trucs refcursor, sauf text[], nullToleres text[]) is
+$$Renvoie la différence, champ par champ, entre deux ensembles de champs (typiquement deux entrées de la même table).
+Ajoute à la version simple la possibilité d'ignorer les différences lorsqu'il s'agit entre un null sur la première partie et un non null sur la seconde.
+
+Ex.:
+diff('select 0 id, 123  n, 1, 123')                   -> (tout bon)
+diff('select 0 id, 123  n, 1, 456')                   -> 1 diff avec 0: n: 456 // 123
+diff('select 0 id, null::int n, 1, 456')              -> 1 diff avec 0: n: 456 // 
+diff('select 0 id, null::int n, 1, 456', null, '{n}') -> (tout bon)
+diff('select 0 id, 123  n, 1, null', null, '{n}')     -> 1 diff avec 0: n:  // 123
+(seul le null de 0 est assimilable à la valeur de 1, sans réciprocité)$$;
