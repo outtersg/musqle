@@ -43,6 +43,11 @@ $$
 $$
 language plpgsql;
 
+create or replace function _diff_fonc(avecNullToleres boolean) returns text language sql as
+$F$
+	select
+	$€$
+
 -- NOTE: cette fonction ne fonctionne qu'à partir de PostgreSQL 9.3 (fonction JSON).
 create or replace function diff(trucs refcursor, sauf text[]) returns table(ida bigint, idb bigint, champ text, a text, b text) as
 $$
@@ -83,6 +88,20 @@ $$
 	end;
 $$
 language plpgsql;
+
+	$€$;
+$F$
+;
+
+create or replace function _diff_init() returns void language plpgsql as
+$$
+	begin
+		execute _diff_fonc(false);
+	end;
+$$;
+select _diff_init();
+drop function _diff_init();
+drop function _diff_fonc(boolean);
 
 comment on function diff(trucs refcursor, sauf text[]) is
 $$Renvoie la différence, champ par champ, entre deux ensembles de champs (typiquement deux entrées de la même table).
