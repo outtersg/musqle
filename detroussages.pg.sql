@@ -68,7 +68,8 @@ $dft$
 		-- À FAIRE: permettre, colonne par colonne, d'avoir une autre valeur "insignifiante" (ex.: '', '-').
 		;
 		
-		return
+		return regexp_replace
+		(
 			$$
 -- À FAIRE: décoder en dur le nom de la fonction générée, afin d'éviter les interblocages entre sessions faisant simultanément des detroussages.
 create or replace function _detroussages_fonc(groupes text[]) returns table(tache bigint, id bigint, info text) language sql as
@@ -76,7 +77,9 @@ $df$
 #include detroussages.pg.fonc.sql
 select * from maj;
 $df$;
-			$$;
+			$$,
+			E'([\t]*[\n]){2,}', E'\n', 'g'
+		);
 	end;
 $dft$;
 
