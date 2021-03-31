@@ -60,6 +60,19 @@ $$
 	end;
 $$;
 
+-- DIFF sur Tables d'Entrées Reliées en un Immense Ensemble
+-- DIFF avec Texte d'Explication Récapitulative des Incompatibilités entre Entrées
+create or replace function diffterie(nomTable text, ids diff_ids[], sauf text[], nullToleres text[]) returns table(idref bigint, idcomp bigint, champ text, valref text, valcomp text) language plpgsql as
+$$
+	declare
+		trucs refcursor;
+	begin
+		open trucs for execute format('select a.*, b.* from unnest($1) c join %s a on a.id = c.comp join %s b on b.id = c.ref', nomTable, nomTable) using ids;
+		return query select idb, ida, d.champ, b, a from diff(trucs, sauf, nullToleres) d;
+		close trucs;
+	end;
+$$;
+
 create or replace function diff(trucs refcursor) returns table(ida bigint, idb bigint, champ text, a text, b text) as
 $$
 	begin
