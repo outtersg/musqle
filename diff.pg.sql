@@ -46,6 +46,17 @@ $$
 	end;
 $$;
 
+create or replace function diff(req text, sauf text[], nullToleres text[]) returns table(ida bigint, idb bigint, champ text, a text, b text) language plpgsql as
+$$
+	declare
+		trucs refcursor;
+	begin
+		open trucs for execute req;
+		return query select * from diff(trucs, sauf, nullToleres);
+		close trucs;
+	end;
+$$;
+
 create or replace function diff(trucs refcursor) returns table(ida bigint, idb bigint, champ text, a text, b text) as
 $$
 	begin
