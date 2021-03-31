@@ -154,8 +154,13 @@ $$
 #if defined DEDE_DIFF_COLONNES_IGNOREES
 			diffSaufSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_IGNOREES_OPTIONS)||diffSaufSurColonnes;
 #endif
-			--return query select * from dede_execre('select * from '||nomTable||'_dede_diff('||ancien||', '||nouveau||execute dedeselect * from dede_diff(nomTable, 
-			return query execute 'select id, true as err, err as message from '||nomTable||'_dede_diff($1, $2, $3)' using ancien, nouveau, diffSaufSurColonnes;
+			return query
+				select
+					idcomp ancien,
+					true as err,
+					'diff avec '||nouveau||': '||champ||': '||coalesce(valcomp, '<null>')||' // '||coalesce(valref, '<null>') as message
+				from diffterie(nomTable, format('{"(%s,%s)"}', nouveau, ancien)::diff_ids[], diffSaufSurColonnes, '{}')
+			;
 			if found then
 				return;
 			end if;
