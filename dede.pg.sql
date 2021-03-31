@@ -143,6 +143,7 @@ $$
 	declare
 		curdi refcursor;
 		req text;
+		nullRecessifSurColonnes text[] := '{}';
 	begin
 		-- Vérification des données.
 		
@@ -153,13 +154,16 @@ $$
 		if diffSaufSurColonnes is not null then
 #if defined DEDE_DIFF_COLONNES_IGNOREES
 			diffSaufSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_IGNOREES_OPTIONS)||diffSaufSurColonnes;
+#if defined DEDE_DIFF_COLONNES_NULL_RECESSIF_OPTIONS
+			nullRecessifSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_NULL_RECESSIF_OPTIONS)||nullRecessifSurColonnes;
+#endif
 #endif
 			return query
 				select
 					idcomp ancien,
 					true as err,
 					'diff avec '||nouveau||': '||champ||': '||coalesce(valcomp, '<null>')||' // '||coalesce(valref, '<null>') as message
-				from diffterie(nomTable, format('{"(%s,%s)"}', nouveau, ancien)::diff_ids[], diffSaufSurColonnes, '{}')
+				from diffterie(nomTable, format('{"(%s,%s)"}', nouveau, ancien)::diff_ids[], diffSaufSurColonnes, nullRecessifSurColonnes)
 			;
 			if found then
 				return;
