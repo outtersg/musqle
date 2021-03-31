@@ -21,6 +21,9 @@
 -- À FAIRE?: une version à appeler en select row(a.*), row(b.*): permettrait-ce d'appliquer un l.a is distinct from l.b en première passe, pour éviter de comparer champ par champ si tout se ressemble?
 -- À FAIRE?: sur de gros enregistrements, on aurait peut-être intérêt à générer une fonction temporaire dédiée à l'appel, qui accède directement aux champs par leur nom. Attention, cela requérerait le point précédent (travailler par record) car le but est de se passer de json, or c'est le seul format capable de gérer deux occurrences du même nom de champ dans une entrée. Pour travailler directement sur les record il faudra que A et B arrivent non plus l'un à la suite de l'autre, mais comme deux row séparés.
 
+drop type if exists diff_ids cascade;
+create type diff_ids as ("ref" bigint, "comp" bigint);
+
 -- Le curseur est ce qu'il y a de plus efficace, car il nous permet de faire une première passe pour récupérer le nom des colonnes, avant de boucler au plus rapide.
 -- Chaque ligne de n champs doit comporter deux moitiés, chaque moitié représentant un enregistrement à comparer, dont l'ID est conventionnellement attendu en première position de la moitié.
 -- Ainsi la comparaison de deux entrées A et B d'une table (id, num, descr) doit arriver sous la forme idA, numA, descrA, idB, numB, descB.
