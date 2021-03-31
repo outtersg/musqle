@@ -98,6 +98,7 @@ $$
 			-- https://stackoverflow.com/a/8767450/1346819
 			ab := row_to_json(l);
 			return query
+-- À FAIRE: passer ça en pur SQL:
 #if `select count(*) from version() where version ~ '^PostgreSQL ([0-8]\.|9\.[0-3]\.)'` == 1
 				with tab as (select row_number() over() - 1 as col, c, v from json_each_text(ab) tab(c, v)),
 #else
