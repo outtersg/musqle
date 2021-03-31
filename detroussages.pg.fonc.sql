@@ -18,6 +18,14 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
+#if defined(DEDE_CIMETIERE) and defined(DETROU_CIMETIERE_COLS) and not defined(DETROU_CIMETIERE)
+#set DETROU_CIMETIERE DEDE_CIMETIERE
+#endif
+
+#if defined(DETROU_CIMETIERE) and not defined(DETROU_CIMETIERE_COLS)
+#define DETROU_CIMETIERE_COLS nouveau
+#endif
+
 #define for_COLONNE_in_cols \
 	$$||(select string_agg(replace($$
 #define done_COLONNE_in_cols \
@@ -68,6 +76,18 @@ with
 		or (_source.COLONNE is null and daccord.COLONNE is not null)
 		done_COLONNE_in_cols
 	),
+#if defined(DETROU_CIMETIERE)
+	$$||case when exists(select 1 from pg_tables where nomTable||'DETROU_CIMETIERE' in (schemaname||'.'||tablename, tablename)) then $$
+	histo as
+	(
+		insert into $$||nomTable||$$DETROU_CIMETIERE
+			with ids as (select id, ids from afaire join daccord using(tache))
+			select DETROU_CIMETIERE_COLS, t.*
+			from ids join $$||nomTable||$$ t using(id)
+		returning id
+	),
+	$$ else '' end||$$
+#endif
 #if defined(DETROU_DEROULE)
 	maj0 as
 #else
