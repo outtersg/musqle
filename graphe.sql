@@ -18,10 +18,41 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
--- À FAIRE: graphe(nomTable, colx, coly);
 -- À FAIRE: getenv(LINES)
 -- À FAIRE: marquer les ordonnées remarquables, ex. si l'on va de 0.2 à 1.8, marquer 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75.
 -- À FAIRE: passer la légende en options?
+-- À FAIRE: avoir des séries à trous (ne pas forcer toutes les séries à avoir une valeur pour tout x).
+
+create or replace function graphe(nomTable text, colg text, colx text, coly text, options text[]) returns table(y float, graphe text) language plpgsql as
+$$
+	declare
+		d float[][];
+		op2 text[];
+	begin
+		execute format
+		(
+			$e$
+				with
+					d as
+					(
+						select %s g, array_agg(%s order by %s) d
+						from %s
+						group by 1
+						order by 1
+					)
+				select
+					array_agg(d order by g),
+					'{}'
+				from d
+			$e$,
+			colg,
+			coly,
+			colx,
+			nomTable
+		) into d, op2;
+		return query select * from graphe(d, options||op2);
+	end;
+$$;
 
 create or replace function _graphe_sym(series integer[], options text[]) returns text immutable language sql as
 $$
