@@ -20,7 +20,6 @@
 
 -- À FAIRE: getenv(LINES)
 -- À FAIRE: marquer les ordonnées remarquables, ex. si l'on va de 0.2 à 1.8, marquer 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75.
--- À FAIRE: passer la légende en options?
 -- À FAIRE: avoir des séries à trous (ne pas forcer toutes les séries à avoir une valeur pour tout x).
 
 create or replace function graphe(nomTable text, colg text, colx text, coly text, options text[]) returns table(y float, graphe text) language plpgsql as
@@ -82,6 +81,13 @@ $$
 				case when opt like '%:%' then split_part(opt, ':', 2) end val
 			from op
 		),
+		legende as
+		(
+			select row_number() over() n, l.l
+			from params, unnest(('{'||replace(val, ';', ',')||'}')::text[]) l(l)
+			where var = 'légende'
+			-- À FAIRE: autres modes en union: plusieurs légende: d'affilée; ou des légeende1:, légende2:, etc.
+		),
 		serie as (select generate_series(1, array_length(d, 1)) serie),
 		ds as (select serie, d[serie:serie] d from serie),
 		points as
@@ -130,7 +136,14 @@ $$
 		(
 			select y, string_agg(_graphe_sym(series, options), '' order by x) ligne
 			from t group by 1 order by 1 desc
+		),
+		r as
+		(
+			select minou + (y - 0.5) * (maxou - minou) / ny y, ligne
+			from aff, mamie, dims
+			union
+			select minou - n, _graphe_sym(array[n::integer], options)||' '||l
+			from legende, mamie
 		)
-	select minou + (y - 0.5) * (maxou - minou) / ny , ligne
-	from aff, mamie, dims;
+	select * from r order by y desc
 $$;
