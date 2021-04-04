@@ -128,7 +128,7 @@ $$
 					$€$||case when avecRecessifs then $€$
 					case
 						when b.v is not distinct from a.v then false
-						when a.c = any(recessifs) and a.v is null then false
+						when coalesce(a.c||':'||a.v, a.c) = any(recessifs) then false
 						else true
 					end
 					$€$ else $€$
