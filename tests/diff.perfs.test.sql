@@ -18,11 +18,11 @@ insert into t (num, truc, nombre)
 #include ../diff.sql
 begin;
 select count(*) from diff('select a.*, b.* from t a join t b on b.id = a.id + 1');
-insert into chrono select 'tout IMPL', extract(epoch from clock_timestamp() - now());
+insert into chrono select 'tout', extract(epoch from clock_timestamp() - now());
 commit;
 begin;
 select count(*) from diff('select a.*, b.* from t a join t b on b.id = a.id + 1', null, '{nombre:0}');
-insert into chrono select 'filtré IMPL', extract(epoch from clock_timestamp() - now());
+insert into chrono select 'filtré', extract(epoch from clock_timestamp() - now());
 commit;
 #done
 
