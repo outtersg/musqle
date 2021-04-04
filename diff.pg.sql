@@ -122,14 +122,18 @@ $$
 #endif
 				ids as (select a.v::bigint ida, b.v::bigint idb from tab a join tab b on a.col = 0 and b.col = ncols)
 				select ids.ida, ids.idb, a.c, a.v, b.v
-				from tab a
-				join tab b on b.col = a.col + ncols and
-				(
+				from tab a, tab b, ids
+				where a.col between 1 and ncols - 1 and b.col = a.col + ncols
+				and
+					$€$||case when avecRecessifs then $€$
+					case
+						when b.v is not distinct from a.v then false
+						when a.c = any(recessifs) and a.v is null then false
+						else true
+					end
+					$€$ else $€$
 					b.v is distinct from a.v
-					$€$||case when avecRecessifs then $€$and not (a.c = any(recessifs) and a.v is null)$€$ else '' end||$€$
-				)
-				join ids on true
-				where a.col between 1 and ncols - 1
+					$€$ end||$€$
 			;
 			fetch trucs into l;
 			exit when not found;
