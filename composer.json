@@ -1,7 +1,7 @@
 {
 	"name": "gui/musqle",
 	"description": "Mes Utilitaires SQL Éclectiques",
-	"version": "1.1.x-dev",
+	"version": "1.2.x-dev",
 	"license": "MIT",
 	"suggest":
 	{
