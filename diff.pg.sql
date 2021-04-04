@@ -49,26 +49,26 @@ $$
 	end;
 $$;
 
-create or replace function diff(req text, sauf text[], nullToleres text[]) returns table(ida bigint, idb bigint, champ text, a text, b text) language plpgsql as
+create or replace function diff(req text, sauf text[], recessifs text[]) returns table(ida bigint, idb bigint, champ text, a text, b text) language plpgsql as
 $$
 	declare
 		trucs refcursor;
 	begin
 		open trucs for execute req;
-		return query select * from diff(trucs, sauf, nullToleres);
+		return query select * from diff(trucs, sauf, recessifs);
 		close trucs;
 	end;
 $$;
 
 -- DIFF sur Tables d'Entrées Reliées en un Immense Ensemble
 -- DIFF avec Texte d'Explication Récapitulative des Incompatibilités entre Entrées
-create or replace function diffterie(nomTable text, ids diff_ids[], sauf text[], nullToleres text[]) returns table(idref bigint, idcomp bigint, champ text, valref text, valcomp text) language plpgsql as
+create or replace function diffterie(nomTable text, ids diff_ids[], sauf text[], recessifs text[]) returns table(idref bigint, idcomp bigint, champ text, valref text, valcomp text) language plpgsql as
 $$
 	declare
 		trucs refcursor;
 	begin
 		open trucs for execute format('select a.*, b.* from unnest($1) c join %s a on a.id = c.comp join %s b on b.id = c.ref', nomTable, nomTable) using ids;
-		return query select idb, ida, d.champ, b, a from diff(trucs, sauf, nullToleres) d;
+		return query select idb, ida, d.champ, b, a from diff(trucs, sauf, recessifs) d;
 		close trucs;
 	end;
 $$;
@@ -81,19 +81,19 @@ $$
 $$
 language plpgsql;
 
--- À FAIRE?: implémenter la fonction sans nullToleres comme un simple appel à celle avec.
+-- À FAIRE?: implémenter la fonction sans recessifs comme un simple appel à celle avec.
 -- En effet les performances, crainte initiale de l'ajout de critère, ne semblent pas affectées:
 -- entre -0,3 et 0,8 s de pénalité pour la version "longue" sur une requête de 13 s, en moyenne 0,6 s, soit 5%.
 --   begin; select diff('select 0 id, 123 m, 456 n, 1, 456, 789', null, '{n}') from generate_series(0, 99999); select clock_timestamp() - now(); rollback;
 --   (et la même chose sans le , null, '{n}' pour comparer)
 
-create or replace function _diff_fonc(avecNullToleres boolean) returns text language sql as
+create or replace function _diff_fonc(avecRecessifs boolean) returns text language sql as
 $F$
 	select
 	$€$
 
 -- NOTE: cette fonction ne fonctionne qu'à partir de PostgreSQL 9.3 (fonction JSON).
-create or replace function diff(trucs refcursor, sauf text[]$€$||case when avecNullToleres then $€$, nullToleres text[]$€$ else '' end||$€$) returns table(ida bigint, idb bigint, champ text, a text, b text) as
+create or replace function diff(trucs refcursor, sauf text[]$€$||case when avecRecessifs then $€$, recessifs text[]$€$ else '' end||$€$) returns table(ida bigint, idb bigint, champ text, a text, b text) as
 $$
 	declare
 		l record;
@@ -126,7 +126,7 @@ $$
 				join tab b on b.col = a.col + ncols and
 				(
 					b.v is distinct from a.v
-					$€$||case when avecNullToleres then $€$and not (a.c = any(nullToleres) and a.v is null)$€$ else '' end||$€$
+					$€$||case when avecRecessifs then $€$and not (a.c = any(recessifs) and a.v is null)$€$ else '' end||$€$
 				)
 				join ids on true
 				where a.col > 0 and a.c = any(cols)
@@ -169,7 +169,7 @@ Paramètres:
 			select * from diff('select a.*, b.* from t a join t b on a.num = b.num and b.id > a.id');
 	sauf
 		Si mentionné, exclut des champs de la comparaison.$$;
-comment on function diff(trucs refcursor, sauf text[], nullToleres text[]) is
+comment on function diff(trucs refcursor, sauf text[], recessifs text[]) is
 $$Renvoie la différence, champ par champ, entre deux ensembles de champs (typiquement deux entrées de la même table).
 Ajoute à la version simple la possibilité d'ignorer les différences lorsqu'il s'agit entre un null sur la première partie et un non null sur la seconde.
 
