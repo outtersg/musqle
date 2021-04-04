@@ -129,7 +129,7 @@ $$
 					$€$||case when avecRecessifs then $€$and not (a.c = any(recessifs) and a.v is null)$€$ else '' end||$€$
 				)
 				join ids on true
-				where a.col > 0 and a.c = any(cols)
+				where a.col between 1 and ncols - 1
 			;
 			fetch trucs into l;
 			exit when not found;
