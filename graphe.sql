@@ -41,7 +41,7 @@ $$
 					)
 				select
 					array_agg(d order by g),
-					'{}'
+					'{légende:'||string_agg(g, ';' order by g)||'}' -- À FAIRE: virer les caractères fallacieux ([,{"}]).
 				from d
 			$e$,
 			colg,
