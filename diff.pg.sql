@@ -176,6 +176,7 @@ Paramètres:
 comment on function diff(trucs refcursor, sauf text[], recessifs text[]) is
 $$Renvoie la différence, champ par champ, entre deux ensembles de champs (typiquement deux entrées de la même table).
 Ajoute à la version simple la possibilité d'ignorer les différences lorsqu'il s'agit entre un null sur la première partie et un non null sur la seconde.
+(champ récessif: il s'efface devant toute autre valeur)
 
 Ex.:
 diff('select 0 id, 123  n, 1, 123')                   -> (tout bon)
@@ -183,4 +184,11 @@ diff('select 0 id, 123  n, 1, 456')                   -> 1 diff avec 0: n: 456 /
 diff('select 0 id, null::int n, 1, 456')              -> 1 diff avec 0: n: 456 // 
 diff('select 0 id, null::int n, 1, 456', null, '{n}') -> (tout bon)
 diff('select 0 id, 123  n, 1, null', null, '{n}')     -> 1 diff avec 0: n:  // 123
-(seul le null de 0 est assimilable à la valeur de 1, sans réciprocité)$$;
+(seul le null de 0 est assimilable à la valeur de 1, sans réciprocité)
+
+Toute autre valeur récessive que null peut être choisie en précisant après le nom du champ sa valeur textuelle.
+Ex.:
+  {n}        Le null est récessif sur le champ n.
+  {n:-}      La valeur "-" du champ n est récessive.
+  {n:}       La chaîne vide est récessive pour le champ n.
+  {n,n:,n:-} Les trois valeurs null, '', et '-' sont récessives pour le champ n.$$;
