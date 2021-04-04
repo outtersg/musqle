@@ -27,8 +27,9 @@ commit;
 #done
 
 select * from graphe('chrono', 'variante', 'variante', 't', '{ANSI,40}');
+select variante, avg(t) from chrono group by 1 order by 2 desc;
 
--- Mesure de perfs 2021-04-04
+-- Mesure de perfs 2021-04-04 (pg 9.5)
 -- Comparaison croisée sur 10 essais de 20000 entrées chacun (28095 différences déterminées) en faisant varier:
 -- - Sélection des colonnes:
 --   - A: a.col > 0 and a.c = any(cols)
@@ -53,6 +54,10 @@ select * from graphe('chrono', 'variante', 'variante', 't', '{ANSI,40}');
 
 -- Mesure de perfs bis:
 -- En tentant deux variations:
--- - b.v is distinct from a.v and not (a.c = any(recessifs) and a.v is null) -> case when b.v is not distinct from a.v then false when a.c = any(recessifs) and a.v is null then false else true end [idée: que le case court-circuite le calcul de son second when lorsque le premier renvoie false]
--- - a join b join ids -> a, b, ids
+-- - 1: b.v is distinct from a.v and not (a.c = any(recessifs) and a.v is null) -> case when b.v is not distinct from a.v then false when a.c = any(recessifs) and a.v is null then false else true end [idée: que le case court-circuite le calcul de son second when lorsque le premier renvoie false]
+-- - 3: a join b join ids -> a, b, ids
 -- On se rend compte que les deux aboutissent au même plan d'exécution que l'original (que l'on conservera pour sa simplicité d'écriture).
+
+-- Mesure de perfs avec l'implémentation complète des recessifs:
+-- - coalesce(a.c||':'||a.v, a.c) = any(recessifs) grappille 1 à 2 s sur case when a.v is null then a.c else a.c||':'||a.v end = any(recessifs).
+-- - CETTE FOIS LES VARIANTES 1 ET SURTOUT 3 GAGNENT 1 à 2 %
