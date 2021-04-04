@@ -131,6 +131,6 @@ $$
 			select y, string_agg(_graphe_sym(series, options), '' order by x) ligne
 			from t group by 1 order by 1 desc
 		)
-	select y::float, ligne
-	from aff;
+	select minou + (y - 0.5) * (maxou - minou) / ny , ligne
+	from aff, mamie, dims;
 $$;
