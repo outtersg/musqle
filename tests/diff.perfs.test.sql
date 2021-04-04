@@ -26,6 +26,8 @@ insert into chrono select 'filtré IMPL', extract(epoch from clock_timestamp() -
 commit;
 #done
 
+#include ../graphe.sql
+
 select * from graphe('chrono', 'variante', 'variante', 't', '{ANSI,40}');
 select variante, avg(t) from chrono group by 1 order by 2 desc;
 
