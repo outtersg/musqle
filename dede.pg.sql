@@ -351,6 +351,29 @@ $$
 $$
 language plpgsql;
 
+-- La fonction suivante peut être utilisée en:
+-- #define DEDE_DIFF_COLONNES_RECESSIVES_VAL diff_recessifs_options(i.c, i.options, 'récessif')
+create or replace function diff_recessifs_options(champ text, options text, motCle text) returns table(recessif text) immutable language sql as
+$$
+	with vals as
+	(
+		select
+			regexp_replace
+			(
+				(regexp_matches(options, format('[^ ,][^,]* %s|%s:[^,]*', motCle, motCle), 'g'))[1],
+				format(' %s$|^%s:', motCle, motCle),
+				''
+			)
+			val
+	)
+	select
+		case val
+			when 'null' then champ
+			else champ||':'||regexp_replace(val, '^"(.*)"$', '\1')
+		end
+	from vals;
+$$;
+
 #if 0
 -- Ce qui suit ne fonctionne pas: a column definition list is required for functions returning "record"
 -- Exec and REturn.
