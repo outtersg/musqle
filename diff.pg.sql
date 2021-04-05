@@ -106,9 +106,6 @@ $$
 			select array_agg(col) into cols from cols;
 		ncols = array_length(cols, 1) / 2;
 		cols := cols[0:ncols]; -- On ne garde que la première moitié (les champs de la seconde moitié sont supposés avoir le même nom).
-		if sauf is not null then
-			select array_agg(nom) into cols from unnest(cols) cols(nom) where not nom = any(sauf);
-		end if;
 		loop
 			-- https://www.postgresql.org/message-id/trinity-f03554db-477f-45a8-8543-9fc5752fdec4-1399886293028%403capp-gmx-bs43
 			-- https://stackoverflow.com/a/8767450/1346819
@@ -123,7 +120,7 @@ $$
 				ids as (select a.v::bigint ida, b.v::bigint idb from tab a join tab b on a.col = 0 and b.col = ncols)
 				select ids.ida, ids.idb, a.c, a.v, b.v
 				from tab a, tab b, ids
-				where a.col between 1 and ncols - 1 and b.col = a.col + ncols
+				where a.col between 1 and ncols - 1 and b.col = a.col + ncols and case when sauf is null then true else not a.c = any(sauf) end
 				and
 					$€$||case when avecRecessifs then $€$
 					case
