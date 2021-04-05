@@ -87,6 +87,9 @@ language plpgsql;
 --   begin; select diff('select 0 id, 123 m, 456 n, 1, 456, 789', null, '{n}') from generate_series(0, 99999); select clock_timestamp() - now(); rollback;
 --   (et la même chose sans le , null, '{n}' pour comparer)
 
+-- À FAIRE: recessifs de type transition: 0→1 permet au 0 de ne pas apparaître comme différent d'un 1 à droite (mais uniquement dans ce sens).
+-- Mais comment exprimer le null, diffémment de la chaîne vide? Peut-être champ→1 pour <null>→1, et champ:→1 pour <chaîne vide>→1.
+
 create or replace function _diff_fonc(avecRecessifs boolean) returns text language sql as
 $F$
 	select
