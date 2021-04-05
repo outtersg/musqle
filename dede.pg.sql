@@ -154,8 +154,14 @@ $$
 		if diffSaufSurColonnes is not null then
 #if defined DEDE_DIFF_COLONNES_IGNOREES
 			diffSaufSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_IGNOREES_OPTIONS)||diffSaufSurColonnes;
-#if defined DEDE_DIFF_COLONNES_NULL_RECESSIF_OPTIONS
-			nullRecessifSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_NULL_RECESSIF_OPTIONS)||nullRecessifSurColonnes;
+#if defined(DEDE_DIFF_COLONNES_RECESSIVES_VAL) or defined(DEDE_DIFF_COLONNES_RECESSIVES_FILTRE)
+#if not defined(DEDE_DIFF_COLONNES_RECESSIVES_VAL)
+#define DEDE_DIFF_COLONNES_RECESSIVES_VAL i.c
+#endif
+#if not defined(DEDE_DIFF_COLONNES_RECESSIVES_FILTRE)
+#define DEDE_DIFF_COLONNES_RECESSIVES_FILTRE
+#endif
+			nullRecessifSurColonnes := (with val as (select DEDE_DIFF_COLONNES_RECESSIVES_VAL as val from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_RECESSIVES_FILTRE) select array_agg(val) from val)||nullRecessifSurColonnes;
 #endif
 #endif
 			return query
