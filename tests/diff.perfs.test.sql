@@ -48,11 +48,11 @@ select variante, avg(t) from chrono group by 1 order by 2 desc;
 --   1,48 A0-/A2-
 --   1,46 B0i
 --   1,43 B0-/B2-
--- Conclusion:
--- - A est pénalisé de 4 à 7 s par rapport à B => on vire A
--- - i prend 3 à 10 s de plus que - (mais c'est normal: plus de travail)
+-- Constatations (N.B.: on approxime en parlant de % alors qu'il s'agit de "pour cent cinquante"):
+-- - A est pénalisé de 4 à 7 % par rapport à B (mais est nécessaire lorsque certaines colonnes sont exclues via 'sauf') => une solution intermédiaire B+A permet de regagner 1 %, voire 2 avec une logique inverse (cf. AB0ibis plus bas).
+-- - i prend 3 à 10 % de plus que - (mais c'est normal: plus de travail)
 -- - 0 ou 2 sont équivalents pour - (normal: le filtrage supplémentaire n'est appliqué qu'en présence de filtres)
--- - avantage à 0 (4 à 7 s) en cas de filtrage => a priori cette solution (mais on va essayer d'affiner ci-dessous)
+-- - avantage à 0 (4 à 7 %) en cas de filtrage => a priori cette solution (mais on va essayer d'affiner ci-dessous)
 
 -- Mesure de perfs bis:
 -- En tentant deux variations:
@@ -63,3 +63,15 @@ select variante, avg(t) from chrono group by 1 order by 2 desc;
 -- Mesure de perfs avec l'implémentation complète des recessifs:
 -- - coalesce(a.c||':'||a.v, a.c) = any(recessifs) grappille 1 à 2 s sur case when a.v is null then a.c else a.c||':'||a.v end = any(recessifs).
 -- - CETTE FOIS LES VARIANTES 1 ET SURTOUT 3 GAGNENT 1 à 2 %
+-- Pour cette raison on bascule tout le monde sur l'implémentation 1.
+
+-- Mesure de perfs quater:
+-- On reprend les mesures après s'être rendu compte qu'éliminer A était une erreur (B seul ne prend pas en compte le paramètre 'sauf'):
+-- (N.B.: par rapport à la première mesure, on a maintenant l'implémentation des recessifs qui tourne)
+--   1.55 A0i
+--   1.51 AB0i
+--   1.49 AB0ibis (en logique inverse and not a.c = any(sauf))
+--   1.48 A0- / B0i
+--   1.46 AB0-
+--   1.44 AB0-bis (avec un case when sauf is null then true else … end pour optimiser le cas où sauf est vide)
+--   1.42 B0-
