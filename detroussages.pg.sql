@@ -63,7 +63,10 @@ $dft$
 		and is_nullable = 'YES'
 		and column_name not in ('id')
 #if defined(DETROU_COLONNES_IGNOREES)
-		and column_name not in (select i.c from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t))
+#if not defined(DETROU_COLONNES_IGNOREES_FILTRE)
+#define DETROU_COLONNES_IGNOREES_FILTRE
+#endif
+		and column_name not in (select i.c from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DETROU_COLONNES_IGNOREES_FILTRE)
 #endif
 		-- À FAIRE: permettre, colonne par colonne, d'avoir une autre valeur "insignifiante" (ex.: '', '-').
 		;
