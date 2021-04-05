@@ -62,7 +62,11 @@ $$
 			case series
 				when '{1}' then case when 'ANSI' = any(options) then '[33mx[0m' else 'x' end
 				when '{2}' then case when 'ANSI' = any(options) then '[36m+[0m' else '+' end
+				when '{3}' then case when 'ANSI' = any(options) then '[35mo[0m' else 'o' end
 				when '{1,2}' then '*'
+				-- À FAIRE: une option pour utiliser les caractères combinatoires, ex.: Unicode 0366 ou 030A pour le o. Inconvénient: le o serait plus petit que l'autre. Avantage: il peut se combiner avec n'importe quel caractère; de plus au moins sur la police que j'utilise il semble implémenté alors que les deux ci-dessous non.
+				when '{1,3}' then '⊕'
+				when '{2,3}' then '⊗'
 				else array_to_string(series, ',')
 			end
 		end
