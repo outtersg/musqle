@@ -33,6 +33,14 @@ create table DETROU_COLONNES_IGNOREES
 #endif
 #endif
 
+#if defined(DETROU_COLONNES_EXPR) and DETROU_COLONNES_EXPR == 1
+#define DETROU_COLONNES_EXPR expr
+#endif
+
+-- Du hstore sans devoir s'assurer la présence de l'extension.
+drop type if exists detrou_cv cascade;
+create type detrou_cv as (c text, v text);
+
 #if defined(DETROU_DEROULE)
 #if `select count(*) from pg_tables where tablename = 'DETROU_DEROULE'` = 0
 create table DETROU_DEROULE (q timestamp, t text, ref bigint, doublon bigint, err boolean, message text);
@@ -57,18 +65,32 @@ create or replace function detroussages_fonc_table(nomTable text, perso text) re
 $dft$
 	declare
 		cols text[];
+		colsTraduites detrou_cv[];
 	begin
+#if defined(DETROU_COLONNES_EXPR)
+		-- Si la table de paramétrage des colonnes spéciales possède une option de traduction de la valeur, on prend.
+		select array_agg((i.c, regexp_replace(options, '^.*DETROU_COLONNES_EXPR: *', ''))::detrou_cv)
+		into colsTraduites
+		from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t)
+		and options ~ '(^|,) *DETROU_COLONNES_EXPR *:';
+#endif
+		
 		select array_agg(column_name::text) into cols from information_schema.columns
 		where nomTable in (table_name, table_schema||'.'||table_name)
-		and is_nullable = 'YES'
 		and column_name not in ('id')
+		and
+		(
+			is_nullable = 'YES'
+#if defined(DETROU_COLONNES_EXPR)
+			or exists(select 1 from unnest(colsTraduites) tt where tt.c = column_name)
+#endif
+		)
 #if defined(DETROU_COLONNES_IGNOREES)
 #if not defined(DETROU_COLONNES_IGNOREES_FILTRE)
 #define DETROU_COLONNES_IGNOREES_FILTRE
 #endif
 		and column_name not in (select i.c from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DETROU_COLONNES_IGNOREES_FILTRE)
 #endif
-		-- À FAIRE: permettre, colonne par colonne, d'avoir une autre valeur "insignifiante" (ex.: '', '-').
 		;
 		
 		return regexp_replace

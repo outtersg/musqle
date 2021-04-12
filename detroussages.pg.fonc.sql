@@ -27,9 +27,9 @@
 #endif
 
 #define for_COLONNE_in_cols \
-	$$||(select string_agg(replace($$
+	$$||(select string_agg(replace(replace($$
 #define done_COLONNE_in_cols \
-	$$, 'COLONNE', col), E'\n') from unnest(cols) t(col))||$$
+	$$, 'COLONNE_TRADUITE', coalesce(tt.v, '_source.COLONNE')), 'COLONNE', col), E'\n') from unnest(cols) t(col) left join unnest(colsTraduites) tt(c, v) on tt.c = t.col)||$$
 
 with
 	taches as
@@ -41,7 +41,7 @@ with
 		select
 			tache, ids
 			for_COLONNE_in_cols
-			, max(_source.COLONNE) COLONNE_max, min(_source.COLONNE) COLONNE_min
+			, max(COLONNE_TRADUITE) COLONNE_max, min(COLONNE_TRADUITE) COLONNE_min
 			done_COLONNE_in_cols
 		from taches join $$||nomTable||$$ _source on _source.id = any(taches.ids)
 		group by 1, 2
@@ -62,18 +62,18 @@ with
 		select
 			daccord.tache, _source.id
 			for_COLONNE_in_cols
-			, coalesce(_source.COLONNE, daccord.COLONNE) COLONNE
+			, coalesce(COLONNE_TRADUITE, daccord.COLONNE) COLONNE
 			done_COLONNE_in_cols
 			, ''
 			for_COLONNE_in_cols
-			||case when _source.COLONNE is null and daccord.COLONNE is not null then ' COLONNE' else '' end
+			||case when COLONNE_TRADUITE is null and daccord.COLONNE is not null then ' COLONNE' else '' end
 			done_COLONNE_in_cols
 			_modifs
 		from daccord join $$||nomTable||$$ _source on _source.id = any(ids)
 		where false
 		-- Ne sélectionnons l'entrée que si au moins un de ses champs va être modifié.
 		for_COLONNE_in_cols
-		or (_source.COLONNE is null and daccord.COLONNE is not null)
+		or (COLONNE_TRADUITE is null and daccord.COLONNE is not null)
 		done_COLONNE_in_cols
 	),
 #if defined(DETROU_CIMETIERE)
