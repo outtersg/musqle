@@ -29,6 +29,9 @@ create table DETROU_COLONNES_IGNOREES
 	s text,
 	t text,
 	c text
+#if defined(DETROU_COLONNES_EXPR)
+	, options text
+#endif
 );
 #endif
 #endif
