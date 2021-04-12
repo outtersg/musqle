@@ -22,6 +22,23 @@
 -- Supprime les trous d'entrées à partir d'une autre entrée de la même table.
 -- Est considéré comme un trou une colonne à null (à moins que le null n'y soit référencé comme significatif)
 
+-- Avant d'invoquer ce fichier, possibilité de définir:
+-- DETROU_DEROULE
+--   Nom d'une table entreposant le journal détaillé des détroussages.
+-- DETROU_COLONNES_IGNOREES
+--   Nom d'une table où paramétrer les colonnes à ignorer dans la comparaison d'entrées.
+-- DETROU_COLONNES_IGNOREES_FILTRE
+--   Permet de filtrer les entrées de DETROU_COLONNES_IGNOREES à considérer.
+--   Si non définie, toute entrée trouvée dans DETROU_COLONNES_IGNOREES dénotera une colonne à NE PAS détrousser.
+-- DETROU_COLONNES_EXPR
+--   Active la possibilité de valeurs de synthèse.
+--   /!\ cette synthèse de valeurs passe par l'interprétation de SQL paramétré dans la table DETROU_COLONNES_IGNOREES: les droits d'écriture sur cette table doivent donc être contrôlés.
+--   Ceci permet de considérer une valeur comme nulle (et donc de la rendre détroussable par n'importe quelle autre valeur).
+--   L'expression de conversion peut se référer à la table sous l'alias _source.
+--   Exemple pour que dans la colonne 'nom' un '-' soit remplacé par un 'Martin':
+--     -- Le case lorsqu'aucun else n'est spécifié renvoie un null:
+--     insert into DETROU_COLONNES_IGNOREES (c, options) values ('nom', $$ case when _source.nom not in ('-') then _source.nom end $$);
+
 #if defined(DETROU_COLONNES_IGNOREES)
 #if `select count(*) from pg_tables where tablename = 'DETROU_COLONNES_IGNOREES'` = 0
 create table DETROU_COLONNES_IGNOREES
