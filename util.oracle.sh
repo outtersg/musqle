@@ -16,6 +16,10 @@ sqloracle()
 # https://chartio.com/resources/tutorials/how-to-list-all-tables-in-oracle/
 quelletable()
 {
+	# -a: récupère aussi les tables sans statistiques.
+	STATS="and num_rows > 0"
+	if [ "x$1" = x-a ] ; then STATS="and (num_rows is null or num_rows > 0)" ; shift ; fi
+	
 	c=row_id
 	
 	guillemette() { sed -e "s/ /','/g" ; }
@@ -24,12 +28,14 @@ quelletable()
 	{
 		cat <<TERMINE
 set pagesize 0
+set feedback off
 
-select table_name
-from all_tab_columns
+select t.table_name
+from all_tables t, all_tab_columns c
 where
-	owner = '$BDD_QUI' and lower(column_name) = lower('$c')
-order by table_name desc;
+	t.owner = '$BDD_QUI' and c.table_name = t.table_name and c.owner = t.owner and lower(column_name) = lower('$c')
+	$STATS
+order by t.table_name desc;
 TERMINE
 	} | $BDD_SQLEUR | awk '{f="/tmp/temp.tables."(NR%4);print>f}'
 	
