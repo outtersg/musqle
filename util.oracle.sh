@@ -17,6 +17,10 @@ sqloracle()
 quelletable()
 {
 	c=row_id
+	
+	guillemette() { sed -e "s/ /','/g" ; }
+	trucs="`echo "$*" | guillemette`"
+	
 	{
 		cat <<TERMINE
 set pagesize 0
@@ -34,7 +38,7 @@ TERMINE
 			echo "set pagesize 0;"
 			while read t
 			do
-				echo "select 'oui', '$t', $c from $t where $c in ('$1');"
+				echo "select 'oui', '$t', $c from $t where $c in ('$trucs');"
 			done < $f
 		} | $BDD_SQLEUR 2>&1 | grep "^oui" &
 	done
