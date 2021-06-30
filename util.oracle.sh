@@ -32,6 +32,8 @@ where
 order by table_name desc;
 TERMINE
 	} | $BDD_SQLEUR | awk '{f="/tmp/temp.tables."(NR%4);print>f}'
+	
+	printf "Recherche parmi %d tables\n" "`cat /tmp/temp.tables.? | wc -l`" >&2
 	for f in /tmp/temp.tables.[0123]
 	do
 		{
