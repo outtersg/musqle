@@ -20,7 +20,12 @@ quelletable()
 	STATS="and num_rows > 0"
 	if [ "x$1" = x-a ] ; then STATS="and (num_rows is null or num_rows > 0)" ; shift ; fi
 	
+	# Si le premier paramètre ressemble à un nom de colonne, on bascule sur cette colonne.
 	c=row_id
+	case "$1" in
+		*[-\ ]*|[0-9]*) true ;;
+		*_*|id|ID) c="$1" ; shift ;;
+	esac
 	
 	guillemette() { sed -e "s/ /','/g" ; }
 	trucs="`echo "$*" | guillemette`"
