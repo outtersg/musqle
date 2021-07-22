@@ -76,6 +76,14 @@ $$
 	end;
 $$;
 
+create or replace function detroussages(nomTable text, ids bigint[])
+	returns table(tache bigint, id bigint, info text)
+	language sql
+as
+$$
+	select * from detroussages(nomTable, array[array_to_string(ids, ' ')], null);
+$$;
+
 create or replace function detroussages(nomTable text, id0 bigint, id1 bigint) returns table(tache bigint, id bigint, info text) language sql as
 $$
 	select * from detroussages(nomTable, array[id0||' '||id1], null);
