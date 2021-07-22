@@ -36,26 +36,17 @@ with
 	(
 		select row_number() over() tache, string_to_array(g, ' ')::bigint[] ids from unnest(groupes) t(g)
 	),
-	mamie as
-	(
-		select
-			tache, ids
-			for_COLONNE_in_cols
-			, max(COLONNE_TRADUITE) COLONNE_max, min(COLONNE_TRADUITE) COLONNE_min
-			done_COLONNE_in_cols
-		from taches join $$||nomTable||$$ _source on _source.id = any(taches.ids)
-		group by 1, 2
-		having count(1) > 1 -- Inutile de comparer une entrée toute seule avec elle-même.
-	),
 	-- Sur quels champs les entrées possédant de la donnée se mettent-elles d'accord?
 	daccord as
 	(
 		select
 			tache, ids
 			for_COLONNE_in_cols
-			, case when COLONNE_max = COLONNE_min then COLONNE_max end COLONNE
+			, case when max(COLONNE_TRADUITE) = min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE) end COLONNE
 			done_COLONNE_in_cols
-		from mamie
+		from taches join $$||nomTable||$$ _source on _source.id = any(taches.ids)
+		group by 1, 2
+		having count(1) > 1 -- Inutile de comparer une entrée toute seule avec elle-même.
 	),
 	afaire as
 	(
