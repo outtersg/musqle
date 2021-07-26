@@ -38,6 +38,10 @@
 --   Exemple pour que dans la colonne 'nom' un '-' soit remplacé par un 'Martin':
 --     -- Le case lorsqu'aucun else n'est spécifié renvoie un null:
 --     insert into DETROU_COLONNES_IGNOREES (c, options) values ('nom', $$ case when _source.nom not in ('-') then _source.nom end $$);
+-- DETROU_AGREG
+--   Active la possibilité d'expressions d'agrégation.
+--   Ceci permet d'agréger les valeurs différentes, par exemple si elles sont "suffisamment proches" pour être fusionnables:
+--     insert into DETROU_COLONNES_IGNOREES (c, options) values ('val', $$ DETROU_AGREG: case when min(val) >= max(val) - 10 then avg(val) end $$);
 
 #if defined(DETROU_COLONNES_IGNOREES)
 #if `select count(*) from pg_tables where tablename = 'DETROU_COLONNES_IGNOREES'` = 0
@@ -46,7 +50,7 @@ create table DETROU_COLONNES_IGNOREES
 	s text,
 	t text,
 	c text
-#if defined(DETROU_COLONNES_EXPR)
+#if defined(DETROU_COLONNES_EXPR) or defined(DETROU_AGREG)
 	, options text
 #endif
 );
@@ -55,6 +59,10 @@ create table DETROU_COLONNES_IGNOREES
 
 #if defined(DETROU_COLONNES_EXPR) and DETROU_COLONNES_EXPR == 1
 #define DETROU_COLONNES_EXPR expr
+#endif
+
+#if defined(DETROU_AGREG) and DETROU_AGREG == 1
+#define DETROU_AGREG agreg
 #endif
 
 -- Du hstore sans devoir s'assurer la présence de l'extension.
@@ -94,6 +102,7 @@ $dft$
 	declare
 		cols text[];
 		colsTraduites detrou_cv[];
+		agregats detrou_cv[];
 	begin
 #if defined(DETROU_COLONNES_EXPR)
 		-- Si la table de paramétrage des colonnes spéciales possède une option de traduction de la valeur, on prend.
@@ -101,6 +110,13 @@ $dft$
 		into colsTraduites
 		from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t)
 		and options ~ '(^|,) *DETROU_COLONNES_EXPR *:';
+#endif
+#if defined(DETROU_AGREG)
+		-- Si la table de paramétrage des colonnes spéciales définit la fonction d'agrégation de valeurs différentes, on prend.
+		select array_agg((i.c, regexp_replace(options, '^.*DETROU_AGREG: *', ''))::detrou_cv)
+		into agregats
+		from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t)
+		and options ~ '(^|[,;]) *DETROU_AGREG *:';
 #endif
 		
 		select array_agg(column_name::text) into cols from information_schema.columns

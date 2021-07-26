@@ -29,7 +29,11 @@
 #define for_COLONNE_in_cols \
 	$$||(select string_agg(replace(replace($$
 #define done_COLONNE_in_cols \
-	$$, 'COLONNE_TRADUITE', coalesce(tt.v, '_source.COLONNE')), 'COLONNE', col), E'\n') from unnest(cols) t(col) left join unnest(colsTraduites) tt(c, v) on tt.c = t.col)||$$
+	$$, 'COLONNE_TRADUITE', coalesce(tt.v, '_source.COLONNE')), 'COLONNE', t.col), E'\n') \
+	from unnest(cols) t(col) \
+	left join unnest(colsTraduites) tt(c, v) on tt.c = t.col \
+	left join unnest(agregats) ta(col, agreg) on ta.col = t.col \
+	)||$$
 
 with
 	taches as
@@ -42,7 +46,7 @@ with
 		select
 			tache, ids
 			for_COLONNE_in_cols
-			, case when max(COLONNE_TRADUITE) = min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE) end COLONNE
+			, $$||coalesce(agreg, $$ case when max(COLONNE_TRADUITE) = min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE) end $$)||$$ COLONNE
 			done_COLONNE_in_cols
 		from taches join $$||nomTable||$$ _source on _source.id = any(taches.ids)
 		group by 1, 2
