@@ -61,14 +61,14 @@ with
 			done_COLONNE_in_cols
 			, ''
 			for_COLONNE_in_cols
-			||case when COLONNE_TRADUITE is null and daccord.COLONNE is not null then ' COLONNE' else '' end
+			||case when daccord.COLONNE is not null and (COLONNE_TRADUITE is null or COLONNE_TRADUITE <> daccord.COLONNE) then ' COLONNE' else '' end
 			done_COLONNE_in_cols
 			_modifs
 		from daccord join $$||nomTable||$$ _source on _source.id = any(ids)
 		where false
 		-- Ne sélectionnons l'entrée que si au moins un de ses champs va être modifié.
 		for_COLONNE_in_cols
-		or (COLONNE_TRADUITE is null and daccord.COLONNE is not null)
+			or (daccord.COLONNE is not null and (COLONNE_TRADUITE is null or COLONNE_TRADUITE <> daccord.COLONNE))
 		done_COLONNE_in_cols
 	),
 #if defined(DETROU_CIMETIERE)
