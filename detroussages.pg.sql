@@ -98,6 +98,8 @@ create or replace function detrou
 as
 $$
 	begin
+		-- À FAIRE: ne pas recréer la fonction à chaque fois, la mémoriser (sur la session) en fonction d'un md5 dépendnat de nomTable||case when toutou then '_' else '' end; droper en début de session (variable d'env?). Cf. l'À FAIRE plus bas.
+		-- À FAIRE: créer dans pg_temp?
 		execute detroussages_fonc_table(nomTable, toutou);
 		return query select * from _detroussages_fonc(groupes);
 		drop function _detroussages_fonc(groupes text[]);
