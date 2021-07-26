@@ -158,3 +158,9 @@ $dft$;
 create aggregate max(boolean) (sfunc = boolor_statefunc, stype = boolean);
 create aggregate min(boolean) (sfunc = booland_statefunc, stype = boolean);
 #endif
+
+-- À FAIRE: enchaîner detroussages et dede. Possibilité de convertir détrou en diff en lui faisant renvoyer le couple plutôt que la seule valeur (pour distinguer un null "pas égal" d'un null "égalité, toutes les valeurs étant null").
+-- NOTE: ordre
+-- Deux raisons de penser qu'il est moins rapide pour dede de faire detroussages puis diff, que diff puis detroussages:
+-- 1. le diff compare en une passe tous les champs des deux entrées (même s'il ne compare les entrées que deux par deux), alors que detrou fait un or entre les champs énumérés un à un.
+-- 2. si dede est appelé, on présuppose que les champs sont déjà suffisamment proches pour ne pas avoir besoin d'un detroussages.
