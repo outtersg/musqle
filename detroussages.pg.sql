@@ -109,7 +109,7 @@ $dft$
 		select array_agg((i.c, regexp_replace(options, '^.*DETROU_COLONNES_EXPR: *', ''))::detrou_cv)
 		into colsTraduites
 		from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t)
-		and options ~ '(^|,) *DETROU_COLONNES_EXPR *:';
+		and options ~ '(^|[,;]) *DETROU_COLONNES_EXPR *:';
 #endif
 #if defined(DETROU_AGREG)
 		-- Si la table de paramétrage des colonnes spéciales définit la fonction d'agrégation de valeurs différentes, on prend.
