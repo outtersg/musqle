@@ -46,6 +46,11 @@ with
 		select
 			tache, ids
 			for_COLONNE_in_cols
+			-- NOTE: fonction agrégée
+			-- Ici il a été tenté de reposer sur une seule fonction d'agrégat:
+			--   , sansdistinctionaucune(COLONNE_TRADUITE) COLONNE
+			-- supposée + rapide (une seule au lieu des 2 passes min et max) et + efficace (dès la première valeur ≠ on peut sortir (en tt cas marquer l'accu ĉ noop).
+			-- En pratique + lent, car min et max ultra optimisées, cf. tests/agg.date.sql
 			, $$||coalesce(agreg, $$ case when max(COLONNE_TRADUITE) = min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE) end $$)||$$ COLONNE
 			done_COLONNE_in_cols
 		from taches join $$||nomTable||$$ _source on _source.id = any(taches.ids)
