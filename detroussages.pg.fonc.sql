@@ -62,7 +62,7 @@ with
 		select
 			daccord.tache, _source.id
 			for_COLONNE_in_cols
-			, coalesce(COLONNE_TRADUITE, daccord.COLONNE) COLONNE
+			, coalesce(daccord.COLONNE, COLONNE_TRADUITE) COLONNE
 			done_COLONNE_in_cols
 			, ''
 			for_COLONNE_in_cols
