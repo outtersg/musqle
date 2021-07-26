@@ -34,6 +34,17 @@
 	left join unnest(colsTraduites) tt(c, v) on tt.c = t.col \
 	left join unnest(agregats) ta(col, agreg) on ta.col = t.col \
 	)||$$
+#define array_agg_cols(CONDITION) \
+	regexp_replace \
+	( \
+		'{' \
+			for_COLONNE_in_cols \
+				||case when CONDITION then ',COLONNE' else '' end \
+			done_COLONNE_in_cols \
+		||'}', \
+		'^{,', \
+		'{' \
+	)::text[]
 
 with
 	taches as
@@ -41,7 +52,7 @@ with
 		select row_number() over() tache, string_to_array(g, ' ')::bigint[] ids from unnest(groupes) t(g)
 	),
 	-- Sur quels champs les entrées possédant de la donnée se mettent-elles d'accord?
-	daccord as
+	daccord0 as
 	(
 		select
 			tache, ids
@@ -52,29 +63,49 @@ with
 			-- supposée + rapide (une seule au lieu des 2 passes min et max) et + efficace (dès la première valeur ≠ on peut sortir (en tt cas marquer l'accu ĉ noop).
 			-- En pratique + lent, car min et max ultra optimisées, cf. tests/agg.date.sql
 			, $$||coalesce(agreg, $$ case when max(COLONNE_TRADUITE) = min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE) end $$)||$$ COLONNE
+			, count(COLONNE_TRADUITE) COLONNE__nv__ -- Nombre de valeurs non null sur cette colonne.
 			done_COLONNE_in_cols
 		from taches join $$||nomTable||$$ _source on _source.id = any(taches.ids)
 		group by 1, 2
 		having count(1) > 1 -- Inutile de comparer une entrée toute seule avec elle-même.
 	),
+	daccord as
+	(
+		-- À FAIRE: permettre à null d'être une valeur comme une autre (agrégeable etc.).
+		-- En ce cas l'agrég devrait renvoyer non pas la valeur d'agrégat, mais un (val, alignee bool).
+		-- Cependant cela pose des difficultés techniques car il faudrait alors créer un type composite par type de colonne.
+		-- Pour le moment ce succès d'alignement est calculé à partir des null (si alignement = null alors qu'il y a au moins une valeur non nulle, c'est qu'on n'a pas trouvé d'accord sur ce champ).
+		select
+			tache, ids,
+			for_COLONNE_in_cols
+			COLONNE,
+			done_COLONNE_in_cols
+			array_agg_cols(COLONNE__nv__ > 0 and COLONNE is null) nons
+		from daccord0
+	),
+	maj as
+	(
+		select
+			daccord.tache,
+			_source.id,
+			array_agg_cols(daccord.COLONNE is not null and (COLONNE_TRADUITE is null or COLONNE_TRADUITE <> daccord.COLONNE)) ouis,
+			nons
+		from daccord join $$||nomTable||$$ _source on _source.id = any(ids)
+	),
 	afaire as
 	(
 		select
-			daccord.tache, _source.id
+			maj.tache, _source.id,
 			for_COLONNE_in_cols
-			, coalesce(daccord.COLONNE, COLONNE_TRADUITE) COLONNE
+			case when 'COLONNE' = any(ouis) then daccord.COLONNE else COLONNE_TRADUITE end COLONNE,
 			done_COLONNE_in_cols
-			, ''
-			for_COLONNE_in_cols
-			||case when daccord.COLONNE is not null and (COLONNE_TRADUITE is null or COLONNE_TRADUITE <> daccord.COLONNE) then ' COLONNE' else '' end
-			done_COLONNE_in_cols
-			_modifs
-		from daccord join $$||nomTable||$$ _source on _source.id = any(ids)
-		where false
+			ouis
+		from maj
+		join daccord using(tache)
+		join $$||nomTable||$$ _source using(id)
 		-- Ne sélectionnons l'entrée que si au moins un de ses champs va être modifié.
-		for_COLONNE_in_cols
-			or (daccord.COLONNE is not null and (COLONNE_TRADUITE is null or COLONNE_TRADUITE <> daccord.COLONNE))
-		done_COLONNE_in_cols
+		-- Ça évite d'encrasser avec une table temporaire comportant toutes les colonnes pour rien.
+		where array_length(ouis, 1) > 0
 	),
 #if defined(DETROU_CIMETIERE)
 	$$||case when exists(select 1 from pg_tables where nomTable||'DETROU_CIMETIERE' in (schemaname||'.'||tablename, tablename)) then $$
@@ -88,11 +119,7 @@ with
 	),
 	$$ else '' end||$$
 #endif
-#if defined(DETROU_DEROULE)
 	maj0 as
-#else
-	maj as
-#endif
 	(
 		update $$||nomTable||$$ _source
 		set
@@ -102,13 +129,9 @@ with
 			done_COLONNE_in_cols
 		from afaire
 		where _source.id = afaire.id
-		returning afaire.tache, _source.id, 'détroué:'||_modifs info
+		returning afaire.tache, _source.id, afaire.ouis
 #if defined(DETROU_DEROULE)
 		, clock_timestamp() q
-	),
-	maj as
-	(
-		select tache, id, info from maj0
 	),
 	majj as
 	(
@@ -119,8 +142,8 @@ with
 				case when maj0.id = taches.ids[1] then maj0.id else null end,
 				case when maj0.id <> taches.ids[1] then maj0.id else null end,
 				false,
-				maj0.info
-			from taches join maj0 on taches.tache = maj0.tache
+				'détroué: '||array_to_string(ouis, ',') info
+			from taches join maj0 using(tache)
 		returning coalesce(ref, doublon)
 #endif
 	)

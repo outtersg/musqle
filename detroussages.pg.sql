@@ -78,7 +78,27 @@ create table DETROU_DEROULE (q timestamp, t text, ref bigint, doublon bigint, er
 create or replace function detroussages(nomTable text, groupes text[], perso text) returns table(tache bigint, id bigint, info text) language plpgsql as
 $$
 	begin
-		execute detroussages_fonc_table(nomTable, perso);
+		return query
+			select d.tache, d.id, 'détroué: '||array_to_string(d.oui, ' ') info
+			from detrou(nomTable, groupes, null) d
+			where array_length(d.oui, 1) > 0;
+	end;
+$$;
+
+-- Détroussages Approximatif des Doublons pour les Aligner
+-- Mais bon detrou est plus explicite comme nom.
+create or replace function detrou
+(
+	nomTable text,
+	groupes text[],
+	toutou boolean -- TOUT OU rien. Si true, les détroussages ne sont effectués que si la totalité des champs peut être alignée.
+)
+	returns table(tache bigint, id bigint, oui text[], non text[])
+	language plpgsql
+as
+$$
+	begin
+		execute detroussages_fonc_table(nomTable, toutou);
 		return query select * from _detroussages_fonc(groupes);
 		drop function _detroussages_fonc(groupes text[]);
 	end;
@@ -97,7 +117,7 @@ $$
 	select * from detroussages(nomTable, array[id0||' '||id1], null);
 $$;
 
-create or replace function detroussages_fonc_table(nomTable text, perso text) returns text language plpgsql as
+create or replace function detroussages_fonc_table(nomTable text, toutou boolean) returns text language plpgsql as
 $dft$
 	declare
 		cols text[];
@@ -141,10 +161,14 @@ $dft$
 		(
 			$$
 -- À FAIRE: décoder en dur le nom de la fonction générée, afin d'éviter les interblocages entre sessions faisant simultanément des detroussages.
-create or replace function _detroussages_fonc(groupes text[]) returns table(tache bigint, id bigint, info text) language sql as
+-- À FAIRE: générer un nom de fonction par arguments, et la réutiliser tout au long de la session.
+create or replace function _detroussages_fonc(groupes text[])
+returns table(tache bigint, id bigint, oui text[], non text[])
+language sql
+as
 $df$
 #include detroussages.pg.fonc.sql
-select * from maj;
+select tache, id, ouis, nons from maj;
 $df$;
 			$$,
 			E'([\t]*[\n]){2,}', E'\n', 'g'
