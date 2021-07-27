@@ -85,7 +85,11 @@ as
 $$
 	begin
 		return query
-			select d.tache, d.id, 'détroué: '||array_to_string(d.oui, ' ') info
+			select d.tache, d.id,
+			case
+				when toutou and array_length(d.non, 1) > 0 then 'détrouable: '
+				else 'détroué: '
+			end||array_to_string(d.oui, ' ') info
 			from detrou(nomTable, groupes, toutou) d
 			where array_length(d.oui, 1) > 0;
 	end;
