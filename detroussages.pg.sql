@@ -170,7 +170,7 @@ language sql
 as
 $df$
 #include detroussages.pg.fonc.sql
-select tache, id, ouis, nons from maj;
+select tache, id, ouis, nons from maj join daccord using(tache);
 $df$;
 			$$,
 			E'([\t]*[\n]){2,}', E'\n', 'g'

@@ -88,8 +88,7 @@ with
 		select
 			daccord.tache,
 			_source.id,
-			array_agg_cols(daccord.COLONNE is not null and (COLONNE_TRADUITE is null or COLONNE_TRADUITE <> daccord.COLONNE)) ouis,
-			nons
+			array_agg_cols(daccord.COLONNE is not null and (COLONNE_TRADUITE is null or COLONNE_TRADUITE <> daccord.COLONNE)) ouis
 		from daccord join $$||nomTable||$$ _source on _source.id = any(ids)
 	),
 	afaire as
