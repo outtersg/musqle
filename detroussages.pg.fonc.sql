@@ -142,7 +142,7 @@ with
 				case when maj0.id = taches.ids[1] then maj0.id else null end,
 				case when maj0.id <> taches.ids[1] then maj0.id else null end,
 				false,
-				'détroué: '||array_to_string(ouis, ',') info
+				'détroué: '||array_to_string(ouis, ' ') info
 			from taches join maj0 using(tache)
 		returning coalesce(ref, doublon)
 #endif
