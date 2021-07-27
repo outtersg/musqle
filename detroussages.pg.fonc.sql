@@ -105,6 +105,9 @@ with
 		-- Ne sélectionnons l'entrée que si au moins un de ses champs va être modifié.
 		-- Ça évite d'encrasser avec une table temporaire comportant toutes les colonnes pour rien.
 		where array_length(ouis, 1) > 0
+		$$||case when toutou then $$
+		and array_length(nons, 1) is null -- Eh oui, un tableau vide a une longueur nulle et non 0!
+		$$ else '' end||$$
 	),
 #if defined(DETROU_CIMETIERE)
 	$$||case when exists(select 1 from pg_tables where nomTable||'DETROU_CIMETIERE' in (schemaname||'.'||tablename, tablename)) then $$
