@@ -26,7 +26,7 @@ insert into t (num, truc, nombre) values ('seule', 'borf', null);
 #test
 with
 	ids as (select string_agg(id::text, ' ') g from t group by num)
-select * from detroussages('t', (select array_agg(g) from ids), null);
+select * from detroussages('t', (select array_agg(g) from ids), null) order by id;
 $$
 1	1	"détroué: nombre"
 1	2	"détroué: truc"
