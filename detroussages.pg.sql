@@ -75,12 +75,18 @@ create table DETROU_DEROULE (q timestamp, t text, ref bigint, doublon bigint, er
 #endif
 #endif
 
-create or replace function detroussages(nomTable text, groupes text[], perso text) returns table(tache bigint, id bigint, info text) language plpgsql as
+-- Résidus de la version initiale proposant un troisième paramètre "perso[nnalisation]" jamais implémenté car remplacé par DETROU_COLONNES_*.
+drop function if exists detroussages(text, text[], text);
+
+create or replace function detroussages(nomTable text, groupes text[], toutou boolean)
+	returns table(tache bigint, id bigint, info text)
+	language plpgsql
+as
 $$
 	begin
 		return query
 			select d.tache, d.id, 'détroué: '||array_to_string(d.oui, ' ') info
-			from detrou(nomTable, groupes, null) d
+			from detrou(nomTable, groupes, toutou) d
 			where array_length(d.oui, 1) > 0;
 	end;
 $$;
