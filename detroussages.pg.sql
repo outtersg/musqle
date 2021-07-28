@@ -43,6 +43,14 @@
 --   Ceci permet d'agréger les valeurs différentes, par exemple si elles sont "suffisamment proches" pour être fusionnables:
 --     insert into DETROU_COLONNES_IGNOREES (c, options) values ('val', $$ DETROU_AGREG: case when min(val) >= max(val) - 10 then avg(val) end $$);
 
+-- /!\ En cas de modification de la table (ex.: ajout d'une colonne) ou de son paramétrage (ex.: par DETROU_AGREG),
+-- si detroussages() a déjà été appelée, un appel post-modification (dans la même session) restera sur l'ancien schéma.
+-- La prise en compte du schéma ne sera effective que sur une nouvelle session.
+-- Pour forcer le recalcul de la fonction dans la même session (ex.: select * from detroussages('t'); alter table t; select * from detroussages('t');),
+-- vider le cache juste après avoir effectué la modification:
+--   select set_config('detrou._detroussages_fonc_t', null);
+--   select set_config('detrou._detroussages_fonc_t_tt', null);
+
 #if defined(DETROU_COLONNES_IGNOREES)
 #if `select count(*) from pg_tables where tablename = 'DETROU_COLONNES_IGNOREES'` = 0
 create table DETROU_COLONNES_IGNOREES
@@ -77,6 +85,7 @@ create table DETROU_DEROULE (q timestamp, t text, ref bigint, doublon bigint, er
 
 -- Résidus de la version initiale proposant un troisième paramètre "perso[nnalisation]" jamais implémenté car remplacé par DETROU_COLONNES_*.
 drop function if exists detroussages(text, text[], text);
+drop function if exists detroussages_fonc_table(nomTable text, toutou boolean);
 
 create or replace function detroussages(nomTable text, groupes text[], toutou boolean)
 	returns table(tache bigint, id bigint, info text)
@@ -95,6 +104,8 @@ $$
 	end;
 $$;
 
+#include current_setting.pg.sql
+
 -- Détroussages Approximatif des Doublons pour les Aligner
 -- Mais bon detrou est plus explicite comme nom.
 create or replace function detrou
@@ -107,12 +118,21 @@ create or replace function detrou
 	language plpgsql
 as
 $$
+	declare
+		nomFonc text;
+		coucou text; -- Nous indique si la fonction est cachée, parce que "Coucou? Caché!" ou l'inverse.
 	begin
-		-- À FAIRE: ne pas recréer la fonction à chaque fois, la mémoriser (sur la session) en fonction d'un md5 dépendnat de nomTable||case when toutou then '_' else '' end; droper en début de session (variable d'env?). Cf. l'À FAIRE plus bas.
+		-- Génération de la fonction dédiée à cette table.
+		-- N.B.: perfs détaillées dans tests/detroussages.perfs.sql.
 		-- À FAIRE: créer dans pg_temp?
-		drop function if exists _detroussages_fonc(groupes text[]);
-		execute detroussages_fonc_table(nomTable, toutou);
-		return query select * from _detroussages_fonc(groupes);
+		nomFonc := '_detroussages_fonc_'||replace(nomTable, '.', '_')||case when toutou then '_tt' else '' end;
+		coucou := current_setting('detrou.'||nomFonc, true);
+		if coucou is null or coucou = '' then
+			execute 'drop function if exists '||nomFonc||'(text[])';
+			execute detroussages_fonc_table(nomFonc, nomTable, toutou);
+			execute 'set detrou.'||nomFonc||' to 1';
+		end if;
+		return query execute 'select * from '||nomFonc||'($1)' using groupes;
 	end;
 $$;
 
@@ -129,7 +149,7 @@ $$
 	select * from detroussages(nomTable, array[id0||' '||id1], null);
 $$;
 
-create or replace function detroussages_fonc_table(nomTable text, toutou boolean) returns text language plpgsql as
+create or replace function detroussages_fonc_table(nomFonc text, nomTable text, toutou boolean) returns text language plpgsql as
 $dft$
 	declare
 		cols text[];
@@ -172,9 +192,7 @@ $dft$
 		return regexp_replace
 		(
 			$$
--- À FAIRE: décoder en dur le nom de la fonction générée, afin d'éviter les interblocages entre sessions faisant simultanément des detroussages.
--- À FAIRE: générer un nom de fonction par arguments, et la réutiliser tout au long de la session.
-create or replace function _detroussages_fonc(groupes text[])
+create or replace function $$||nomFonc||$$(groupes text[])
 returns table(tache bigint, id bigint, oui text[], non text[])
 language sql
 as

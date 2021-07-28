@@ -38,8 +38,9 @@ $$
 $$;
 
 -- Insertion d'une règle autorisant la fusion de 'quand' lorsque les différentes entrées ont moins d'une semaine d'écart.
--- À FAIRE: le jour où les fonctions sont cachées, vider le cache après avoir inséré dans t_cols.
 insert into t_cols (t, c, options) values ('t', 'quand', $$ DETROU_AGREG: DETROU_AGREG_DATE_FLOUE_MAX(7) $$);
+-- La fonction interne de détroussage doit être recalculée pour cette session.
+select set_config('detrou._detroussages_fonc_t', null, false);
 -- Quelques entrées supplémentaires pour s'assurer que ça ne casse pas le comportement habituel (si un null et une valeur, celle-ci est reprise partout).
 insert into t (num, truc, nombre, quand) values ('1', 'bh', null, null);
 insert into t (num, truc, nombre, quand) values ('1', 'bh', null, null);
