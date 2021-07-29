@@ -134,6 +134,7 @@ create table DEDE_DEROULE (q timestamp, t text, ref bigint, doublon bigint, err 
 #endif
 
 #include diff.pg.sql
+#include current_setting.pg.sql
 
 drop type if exists dede_champ cascade;
 create type dede_champ as ("table" text, champ text, schema text);
@@ -144,6 +145,7 @@ $$
 		curdi refcursor;
 		req text;
 		nullRecessifSurColonnes text[] := '{}';
+		diffs diffterie[];
 	begin
 		-- Vérification des données.
 		
@@ -164,15 +166,32 @@ $$
 			nullRecessifSurColonnes := (with val as (select DEDE_DIFF_COLONNES_RECESSIVES_VAL as val from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_RECESSIVES_FILTRE) select array_agg(val) from val)||nullRecessifSurColonnes;
 #endif
 #endif
+			select array_agg(d) into diffs
+			from diffterie(nomTable, format('{"(%s,%s)"}', nouveau, ancien)::diff_ids[], diffSaufSurColonnes, nullRecessifSurColonnes) d;
+			if found then
+				-- Dernière chance d'éradiquer les différences:
+				if current_setting('dede.detrou', true) is not null then
+					-- Mode détroussages: s'il existe des différences on essaie de les combler.
+					-- À FAIRE?: ne pas détrouer les champs que diffterie n'aurait pas jugés importants. En effet les règles pour ignorer (diff) ou agréger quand même (detrou) ne sont pas sur le même modèle, donc detrou pourrait coincer sur un champ dont diffterie aurait dit "celui-là pas grave s'il diffère".
+					with
+						detrou as (select distinct unnest(oui) oui from detrou(nomTable, array[nouveau||' '||ancien], true))
+					-- On soustrait du récap des incompatibilités celles qui ont pu être résolues.
+					-- À noter que comme on ne compare que deux entrées, il suffit qu'une seule ait vu son champ modifié pour être sûrs de l'alignement.
+					select array_agg(d) into diffs
+					from unnest(diffs) d
+					where not exists(select 1 from detrou where oui = champ);
+				end if;
+				-- Bon, certains champs restent impossibles à concilier. On lâche l'affaire et notre appelant.
+				if array_length(diffs, 1) > 0 then
 			return query
 				select
 					idcomp ancien,
 					true as err,
 					'diff avec '||nouveau||': '||champ||': '||coalesce(valcomp, '<null>')||' // '||coalesce(valref, '<null>') as message
-				from diffterie(nomTable, format('{"(%s,%s)"}', nouveau, ancien)::diff_ids[], diffSaufSurColonnes, nullRecessifSurColonnes)
+						from unnest(diffs)
 			;
-			if found then
 				return;
+				end if;
 			end if;
 		end if;
 		
@@ -209,6 +228,7 @@ $$
 		
 		-- Historisation et suppression.
 		
+		-- À FAIRE: si detrou a donné lieu à une première entrée, et que DETROU_CIMETIERE, alors pas la peine d'ajouter une nouvelle entrée: il nous suffirait de compléter celle tout juste modifiée.
 		perform dede_exec('select '||nomTable||'DEDE_CIMETIERE('||ancien||', '||nouveau||')');
 	end;
 $$
