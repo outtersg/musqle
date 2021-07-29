@@ -285,6 +285,12 @@ $$
 $$
 language sql;
 
+-- À FAIRE: se passer de dede_init.
+-- En effet générer des objets "de travail" pour chaque objet de la base nous force à les maintenir lorsque l'objet source évolue, ou lorsque notre fonctionnement évolue.
+-- - Pour le create table: dans dede(), détecter (par exception) l'absence de la table cimetière, et la créer alors à la volée (puis relancer).
+--   Attention, détecter uniquement l'absence de la table: si c'est une colonne qui manque (parce que la table originale s'en est vu ajouter une, mais la table cimetière a été oubliée dans l'affaire), relancer l'exception initiale: c'est elle qui est intéressante ("plus de colonnes dans la source que dans la cible"), et non celle qui serait lancée si on retentait de créer ("la table toto_cimetière existe déjà").
+-- - Pour la fonction d'enterrement: l'intégrer directement à dede(), plutôt que d'avoir une fonction toto_cimetière(ancien, nouveau) par table
+--   Attention, la difficulté est que la chaîne doit être interprétée par un execute (pour le nom de la table, dynamique), mais que l'intérieur d'un execute n'a pas accès aux variables locales. Autant pour l'ancien on peut le passer par un $1 / using, autant si DEDE_CIMETIERE_COLS utilise nouveau on ne peut pas (sauf à remplacer nouveau par $1, mais pas toto.nouveau, et puis ça décalerait notre $1 correspondant à ancien en $2. Bref c'est compliqué).
 create or replace function dede_init(nomTable text) returns void as
 $dede$
 	begin
