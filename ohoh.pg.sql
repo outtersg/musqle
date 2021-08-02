@@ -39,6 +39,16 @@ create or replace function ohoh(nomTable text, ancien bigint, nouveau bigint)
 	returns void
 	language plpgsql
 as
+$$
+	begin
+		perform ohoh(nomTable, ancien, nouveau, null);
+	end;
+$$;
+
+create or replace function ohoh(nomTable text, ancien bigint, nouveau bigint, commentaire text)
+	returns void
+	language plpgsql
+as
 $f$
 	begin
 		execute format
@@ -50,8 +60,8 @@ $f$
 			nomTable,
 			'OHOH_SUFFIXE',
 			-- /!\ si OHOH_COLS fait référence à toto.nouveau ou la chaîne 'ancien', ça va être remplacé.
-			replace(replace($$OHOH_COLS$$, 'ancien', '$1'), 'nouveau', '$2'),
+			replace(replace(replace($$OHOH_COLS$$, 'ancien', '$1'), 'nouveau', '$2'), 'commentaire', '$3'),
 			nomTable
-		) using ancien, nouveau;
+		) using ancien, nouveau, commentaire;
 	end;
 $f$;
