@@ -28,6 +28,22 @@
 --       d'Ultra-persistence, (cas d'usage 2: pouvoir garder éternellement les valeurs)
 --   ou de Restauration       (cas d'usage 3: pouvoir restaurer intégralement ce qui avait été malencontreusement supprimé)
 
+-- Configuration ---------------------------------------------------------------
+-- Avant d'invoquer ce fichier, possibilité de définir:
+
+-- OHOH_COLS, OHOH_COLS_DEF
+--   Colonnes de préambule des tables OHOH_SUFFIXE.
+--   Si la table d'historisation est créée par ailleurs, seule OHOH_COLS est à définir.
+--   OHOH_COLS:
+--     Valeurs à mettre dans les premières colonnes "techniques" de la table cimetière.
+--     Le champ "nouveau" peut être mentionné pour obtenir l'ID de l'entrée au profit de laquelle la fusion s'effectue.
+--   OHOH_COLS_DEF:
+--     Définition des colonnes pour initialisation de la table cimetière:
+--       create table <table_source>_poubelle as
+--         select OHOH_COLS_DEF, * from <table source> limit 0;
+--     Pour chaque colonne technique on mentionne donc une expression select donnant son type et son nom, ex.:
+--     #define OHOH_COLS_DEF 0::bigint as id_remplacant
+
 #define OHOH_SUFFIXE _poubelle
 
 #if defined(OHOH_SUFFIXE) and not defined(OHOH_COLS)
