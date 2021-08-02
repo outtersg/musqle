@@ -229,7 +229,7 @@ $$
 		-- Historisation et suppression.
 		
 		-- À FAIRE: si detrou a donné lieu à une première entrée, et que DETROU_CIMETIERE, alors pas la peine d'ajouter une nouvelle entrée: il nous suffirait de compléter celle tout juste modifiée.
-		perform dede_exec('select '||nomTable||'DEDE_CIMETIERE('||ancien||', '||nouveau||')');
+			perform dede_enterrement(nomTable, ancien, nouveau);
 	end;
 $$
 language plpgsql;
@@ -289,8 +289,6 @@ language sql;
 -- En effet générer des objets "de travail" pour chaque objet de la base nous force à les maintenir lorsque l'objet source évolue, ou lorsque notre fonctionnement évolue.
 -- - Pour le create table: dans dede(), détecter (par exception) l'absence de la table cimetière, et la créer alors à la volée (puis relancer).
 --   Attention, détecter uniquement l'absence de la table: si c'est une colonne qui manque (parce que la table originale s'en est vu ajouter une, mais la table cimetière a été oubliée dans l'affaire), relancer l'exception initiale: c'est elle qui est intéressante ("plus de colonnes dans la source que dans la cible"), et non celle qui serait lancée si on retentait de créer ("la table toto_cimetière existe déjà").
--- - Pour la fonction d'enterrement: l'intégrer directement à dede(), plutôt que d'avoir une fonction toto_cimetière(ancien, nouveau) par table
---   Attention, la difficulté est que la chaîne doit être interprétée par un execute (pour le nom de la table, dynamique), mais que l'intérieur d'un execute n'a pas accès aux variables locales. Autant pour l'ancien on peut le passer par un $1 / using, autant si DEDE_CIMETIERE_COLS utilise nouveau on ne peut pas (sauf à remplacer nouveau par $1, mais pas toto.nouveau, et puis ça décalerait notre $1 correspondant à ancien en $2. Bref c'est compliqué).
 create or replace function dede_init(nomTable text) returns void as
 $dede$
 	begin
@@ -299,17 +297,39 @@ $dede$
 			$$
 				create table $$||nomTable||'DEDE_CIMETIERE'||$$ as
 					select DEDE_CIMETIERE_COLS_DEF, * from $$||nomTable||$$ limit 0;
-				create function $$||nomTable||$$DEDE_CIMETIERE(ancien bigint, nouveau bigint) returns void language sql as
-				$ddd$
-					insert into $$||nomTable||$$DEDE_CIMETIERE
-						select DEDE_CIMETIERE_COLS, * from $$||nomTable||$$ where id in (ancien);
-					delete from $$||nomTable||$$ where id in (ancien);
-				$ddd$;
 			$$
 		);
 	end;
 $dede$
 language plpgsql;
+
+create or replace function dede_enterrement(nomTable text, ancien bigint, nouveau bigint)
+	returns void
+	language plpgsql
+as
+$f$
+	begin
+		execute format
+		(
+			$$
+				insert into %s%s
+					select %s, * from %s where id in ($1)
+			$$,
+			nomTable,
+			'DEDE_CIMETIERE',
+			-- /!\ si DEDE_CIMETIERE_COLS fait référence à toto.nouveau ou la chaîne 'ancien', ça va être remplacé.
+			replace(replace($$DEDE_CIMETIERE_COLS$$, 'ancien', '$1'), 'nouveau', '$2'),
+			nomTable
+		) using ancien, nouveau;
+		execute format
+		(
+			$$
+				delete from %s where id in ($1)
+			$$,
+			nomTable
+		) using ancien;
+	end;
+$f$;
 
 create or replace function dede_cascade(nomTable text, ancien bigint, nouveau bigint) returns table(id bigint, err text) as
 $$
