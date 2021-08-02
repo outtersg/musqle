@@ -291,24 +291,6 @@ $$
 $$
 language sql;
 
--- À FAIRE: se passer de dede_init.
--- En effet générer des objets "de travail" pour chaque objet de la base nous force à les maintenir lorsque l'objet source évolue, ou lorsque notre fonctionnement évolue.
--- - Pour le create table: dans dede(), détecter (par exception) l'absence de la table cimetière, et la créer alors à la volée (puis relancer).
---   Attention, détecter uniquement l'absence de la table: si c'est une colonne qui manque (parce que la table originale s'en est vu ajouter une, mais la table cimetière a été oubliée dans l'affaire), relancer l'exception initiale: c'est elle qui est intéressante ("plus de colonnes dans la source que dans la cible"), et non celle qui serait lancée si on retentait de créer ("la table toto_cimetière existe déjà").
-create or replace function dede_init(nomTable text) returns void as
-$dede$
-	begin
-		perform dede_exec
-		(
-			$$
-				create table $$||nomTable||'OHOH_SUFFIXE'||$$ as
-					select OHOH_SUFFIXE_COLS_DEF, * from $$||nomTable||$$ limit 0;
-			$$
-		);
-	end;
-$dede$
-language plpgsql;
-
 create or replace function dede_cascade(nomTable text, ancien bigint, nouveau bigint) returns table(id bigint, err text) as
 $$
 	begin
