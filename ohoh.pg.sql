@@ -90,17 +90,16 @@ create or replace function ohoh_(nomTable text, ancien bigint, nouveau bigint, c
 as
 $f$
 	begin
-		execute format
+		execute replace(format
 		(
 			$$
-				insert into %s%s
-					select %s, * from %s where id in ($1)
+				insert into <nomTable>%s
+					select %s, * from <nomTable> where id in ($1)
 			$$,
-			nomTable,
 			'OHOH_SUFFIXE',
 			-- /!\ si OHOH_COLS fait référence à toto.nouveau ou la chaîne 'ancien', ça va être remplacé.
-			replace(replace(replace($$OHOH_COLS$$, 'ancien', '$1'), 'nouveau', '$2'), 'commentaire', '$3'),
-			nomTable
-		) using ancien, nouveau, commentaire;
+			replace(replace(replace($$OHOH_COLS$$, 'ancien', '$1'), 'nouveau', '$2'), 'commentaire', '$3')
+		), '<nomTable>', nomTable)
+		using ancien, nouveau, commentaire;
 	end;
 $f$;
