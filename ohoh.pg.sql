@@ -28,6 +28,13 @@
 --       d'Ultra-persistence, (cas d'usage 2: pouvoir garder éternellement les valeurs)
 --   ou de Restauration       (cas d'usage 3: pouvoir restaurer intégralement ce qui avait été malencontreusement supprimé)
 
+#define OHOH_SUFFIXE _poubelle
+
+#if defined(OHOH_SUFFIXE) and not defined(OHOH_COLS)
+#define OHOH_COLS nouveau
+#define OHOH_COLS_DEF 0::bigint pivot
+#endif
+
 create or replace function ohoh(nomTable text, ancien bigint, nouveau bigint)
 	returns void
 	language plpgsql
@@ -41,9 +48,9 @@ $f$
 					select %s, * from %s where id in ($1)
 			$$,
 			nomTable,
-			'DEDE_CIMETIERE',
-			-- /!\ si DEDE_CIMETIERE_COLS fait référence à toto.nouveau ou la chaîne 'ancien', ça va être remplacé.
-			replace(replace($$DEDE_CIMETIERE_COLS$$, 'ancien', '$1'), 'nouveau', '$2'),
+			'OHOH_SUFFIXE',
+			-- /!\ si OHOH_COLS fait référence à toto.nouveau ou la chaîne 'ancien', ça va être remplacé.
+			replace(replace($$OHOH_COLS$$, 'ancien', '$1'), 'nouveau', '$2'),
 			nomTable
 		) using ancien, nouveau;
 	end;

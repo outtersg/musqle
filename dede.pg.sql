@@ -58,8 +58,6 @@
 --     Pour chaque colonne technique on mentionne donc une expression select donnant son type et son nom, ex.:
 --     #define DEDE_CIMETIERE_COLS_DEF 0::bigint as id_remplacant
 
-#define DEDE_CIMETIERE _poubelle
-
 #if defined DEDE_DIFF_COLONNES_IGNOREES
 #if ! defined(DEDE_DIFF_COLONNES_IGNOREES_OPTIONS)
 #define DEDE_DIFF_COLONNES_IGNOREES_OPTIONS
@@ -128,9 +126,8 @@ create table DEDE_DEROULE (q timestamp, t text, ref bigint, doublon bigint, err 
 #endif
 #endif
 
-#if defined(DEDE_CIMETIERE) and not defined(DEDE_CIMETIERE_COLS)
-#define DEDE_CIMETIERE_COLS nouveau
-#define DEDE_CIMETIERE_COLS_DEF 0::bigint pivot
+#if defined(DEDE_CIMETIERE_COLS) and !defined(OHOH_COLS)
+#define OHOH_COLS DEDE_CIMETIERE_COLS
 #endif
 
 #include diff.pg.sql
@@ -248,7 +245,7 @@ dede(nomTable text, ancien bigint, nouveau bigint, detail smallint, clesEtranger
 Supprime l'entrée <ancien> de la table <nomTable>, au profit de l'entrée <nouveau>.
 
 Sur les tables ayant déclaré une clé étrangère pointant sur notre colonne id, les entrées attachées à <ancien> sont reparentées à <nouveau>.
-L'ancienne entrée est historisée dans <table>DEDE_CIMETIERE.
+L'ancienne entrée est historisée dans <table>OHOH_SUFFIXE.
 
 Si <detail> > 0, des informations sont renvoyées quant au reprisage effectué.
 
@@ -304,8 +301,8 @@ $dede$
 		perform dede_exec
 		(
 			$$
-				create table $$||nomTable||'DEDE_CIMETIERE'||$$ as
-					select DEDE_CIMETIERE_COLS_DEF, * from $$||nomTable||$$ limit 0;
+				create table $$||nomTable||'OHOH_SUFFIXE'||$$ as
+					select OHOH_SUFFIXE_COLS_DEF, * from $$||nomTable||$$ limit 0;
 			$$
 		);
 	end;
