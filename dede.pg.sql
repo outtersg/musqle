@@ -135,6 +135,7 @@ create table DEDE_DEROULE (q timestamp, t text, ref bigint, doublon bigint, err 
 
 #include diff.pg.sql
 #include current_setting.pg.sql
+#include ohoh.pg.sql
 
 drop type if exists dede_champ cascade;
 create type dede_champ as ("table" text, champ text, schema text);
@@ -229,7 +230,15 @@ $$
 		-- Historisation et suppression.
 		
 		-- À FAIRE: si detrou a donné lieu à une première entrée, et que DETROU_CIMETIERE, alors pas la peine d'ajouter une nouvelle entrée: il nous suffirait de compléter celle tout juste modifiée.
-			perform dede_enterrement(nomTable, ancien, nouveau);
+		perform ohoh(nomTable, ancien, nouveau);
+		
+		execute format
+		(
+			$e$
+				delete from %s where id in ($1)
+			$e$,
+			nomTable
+		) using ancien;
 	end;
 $$
 language plpgsql;
@@ -302,34 +311,6 @@ $dede$
 	end;
 $dede$
 language plpgsql;
-
-create or replace function dede_enterrement(nomTable text, ancien bigint, nouveau bigint)
-	returns void
-	language plpgsql
-as
-$f$
-	begin
-		execute format
-		(
-			$$
-				insert into %s%s
-					select %s, * from %s where id in ($1)
-			$$,
-			nomTable,
-			'DEDE_CIMETIERE',
-			-- /!\ si DEDE_CIMETIERE_COLS fait référence à toto.nouveau ou la chaîne 'ancien', ça va être remplacé.
-			replace(replace($$DEDE_CIMETIERE_COLS$$, 'ancien', '$1'), 'nouveau', '$2'),
-			nomTable
-		) using ancien, nouveau;
-		execute format
-		(
-			$$
-				delete from %s where id in ($1)
-			$$,
-			nomTable
-		) using ancien;
-	end;
-$f$;
 
 create or replace function dede_cascade(nomTable text, ancien bigint, nouveau bigint) returns table(id bigint, err text) as
 $$
