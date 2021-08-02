@@ -51,6 +51,16 @@ create or replace function ohoh(nomTable text, ancien bigint, nouveau bigint, co
 as
 $f$
 	begin
+		perform ohoh_(nomTable, ancien, nouveau, commentaire);
+	end;
+$f$;
+
+create or replace function ohoh_(nomTable text, ancien bigint, nouveau bigint, commentaire text)
+	returns void
+	language plpgsql
+as
+$f$
+	begin
 		execute format
 		(
 			$$
