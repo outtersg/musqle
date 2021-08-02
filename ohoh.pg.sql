@@ -1,0 +1,50 @@
+-- Copyright (c) 2020-2021 Guillaume Outters
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+--
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-- SOFTWARE.
+
+-- Arthur / Oh
+-- oh: Opérations d'Historisation
+-- arthur:
+--         Archivage
+--     des Révisions
+--   d'une Table              (de ses entrées)
+-- à but d'Historique,        (cas d'usage 1: traçabilité: savoir ce qu'il s'est passé sur les entrées)
+--       d'Ultra-persistence, (cas d'usage 2: pouvoir garder éternellement les valeurs)
+--   ou de Restauration       (cas d'usage 3: pouvoir restaurer intégralement ce qui avait été malencontreusement supprimé)
+
+create or replace function ohoh(nomTable text, ancien bigint, nouveau bigint)
+	returns void
+	language plpgsql
+as
+$f$
+	begin
+		execute format
+		(
+			$$
+				insert into %s%s
+					select %s, * from %s where id in ($1)
+			$$,
+			nomTable,
+			'DEDE_CIMETIERE',
+			-- /!\ si DEDE_CIMETIERE_COLS fait référence à toto.nouveau ou la chaîne 'ancien', ça va être remplacé.
+			replace(replace($$DEDE_CIMETIERE_COLS$$, 'ancien', '$1'), 'nouveau', '$2'),
+			nomTable
+		) using ancien, nouveau;
+	end;
+$f$;
