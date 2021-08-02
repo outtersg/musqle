@@ -52,6 +52,19 @@ as
 $f$
 	begin
 		perform ohoh_(nomTable, ancien, nouveau, commentaire);
+	exception when undefined_table then
+		execute format
+		(
+			$$
+				create table %s%s as
+					select %s, * from %s limit 0;
+			$$,
+			nomTable,
+			'OHOH_SUFFIXE',
+			$$OHOH_COLS_DEF$$,
+			nomTable
+		);
+		perform ohoh_(nomTable, ancien, nouveau, commentaire);
 	end;
 $f$;
 
