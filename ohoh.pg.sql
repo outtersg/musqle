@@ -84,22 +84,49 @@ $f$
 	end;
 $f$;
 
+-- Fonction de création de la fonction ohoh_.
+-- S'agissant de nombreux replace() sur une expression statique (#define etc.), on a en effet intérêt à effectuer ces replace() à la construction plutôt qu'à chaque exécution (même si l'optimiseur PostgreSQL saura les calculer une seule fois, c'est toujours une de trop, de plus d'un point de vue lisibilité de la fonction définitive on y gagne).
+
+#define OHOH_CORPS_RETRAITE_DEBUT \
+	$€$||regexp_replace(regexp_replace(regexp_replace($€$
+#define OHOH_CORPS_RETRAITE_FIN \
+	$€$, \
+		'([^.])ancien', '\1$1', 'g'), \
+		'([^.])nouveau', '\1$2', 'g'), \
+		'([^.])commentaire', '\1$3', 'g') \
+	||$€$
+
+create or replace function pg_temp.ohoh_fonc()
+	returns void
+	language plpgsql
+as
+$fof$
+	begin
+		execute regexp_replace($€$
+
 create or replace function ohoh_(nomTable text, ancien bigint, nouveau bigint, commentaire text)
 	returns void
 	language plpgsql
 as
 $f$
 	begin
-		execute replace(format
+		execute
+			replace
 		(
 			$$
-				insert into <nomTable>%s
-					select %s, * from <nomTable> where id in ($1)
-			$$,
-			'OHOH_SUFFIXE',
-			-- /!\ si OHOH_COLS fait référence à toto.nouveau ou la chaîne 'ancien', ça va être remplacé.
-			replace(replace(replace($$OHOH_COLS$$, 'ancien', '$1'), 'nouveau', '$2'), 'commentaire', '$3')
-		), '<nomTable>', nomTable)
+				OHOH_CORPS_RETRAITE_DEBUT
+				insert into <nomTable>OHOH_SUFFIXE
+					select OHOH_COLS, * from <nomTable> where id in ($1)
+				OHOH_CORPS_RETRAITE_FIN
+				$$,
+				'<nomTable>', nomTable
+			)
 		using ancien, nouveau, commentaire;
 	end;
 $f$;
+
+			$€$, E'(^|\n)([ \t]*(\n|$))+', '\1', 'g')
+		;
+	end;
+$fof$;
+select pg_temp.ohoh_fonc();
