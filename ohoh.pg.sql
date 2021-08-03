@@ -43,6 +43,10 @@
 --         select OHOH_COLS_DEF, * from <table source> limit 0;
 --     Pour chaque colonne technique on mentionne donc une expression select donnant son type et son nom, ex.:
 --     #define OHOH_COLS_DEF 0::bigint as id_remplacant
+-- OHOH_COND
+--   Si définie, des conditions supplémentaires s'appliquent à l'historisation.
+--   Ex.:
+--     #define OHOH_COND id > 0
 
 #define OHOH_SUFFIXE _poubelle
 
@@ -117,6 +121,9 @@ $f$
 				OHOH_CORPS_RETRAITE_DEBUT
 				insert into <nomTable>OHOH_SUFFIXE
 					select OHOH_COLS, * from <nomTable> where id in ($1)
+#if defined(OHOH_COND)
+					and OHOH_COND
+#endif
 				OHOH_CORPS_RETRAITE_FIN
 				$$,
 				'<nomTable>', nomTable
