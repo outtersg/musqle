@@ -32,6 +32,10 @@
 -- Avant d'invoquer ce fichier, possibilité de définir:
 
 #if 0
+-- OHOH_SUFFIXE
+--   Suffixe accolé à un nom de table pour obtenir le nom de la table d'historisation.
+--   La table cimetière doit posséder un certain nombre de colonnes techniques pour consignation de la suppression, suivies d'une copie des colonnes de la table d'origine (il faut donc répercuter sur la table cimetière tout ajout ou changement de colonne dans la table source).
+--   La table cimetière est créée automatiquement si elle n'existe pas au moment de l'appel à ohoh().
 -- OHOH_COLS, OHOH_COLS_DEF
 --   Colonnes de préambule des tables OHOH_SUFFIXE.
 --   Si la table d'historisation est créée par ailleurs, seule OHOH_COLS est à définir.
@@ -56,7 +60,9 @@
 --     #define OHOH_MAJ      , nrevs = nrevs + 1 where date_histo >= now() - interval('5 minutes')
 #endif
 
+#if not defined(OHOH_SUFFIXE)
 #define OHOH_SUFFIXE _poubelle
+#endif
 
 #if defined(OHOH_SUFFIXE) and not defined(OHOH_COLS)
 #define OHOH_COLS nouveau
