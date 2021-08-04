@@ -252,3 +252,17 @@ create aggregate min(boolean) (sfunc = booland_statefunc, stype = boolean);
 		when min(COLONNE) is not distinct from max(COLONNE) then max(COLONNE) \
 		when min(COLONNE) >= max(COLONNE) - interval 'JOURS days' then max(COLONNE) \
 	end
+
+-- Si les dates diffèrent mais restent dans une plage de JOURS jours, la date *min* est prise comme valeur agrégée.
+-- Exception: si deux dates min émergent, le même jour mais l'une arrondie au jour l'autre avec un horodatage, c'est cette dernière, considérée plus précise, qui est choisie.
+#define DETROU_AGREG_DATE_FLOUE_MIN_DETAILLEE(JOURS) \
+	case \
+		when min(COLONNE) is not distinct from max(COLONNE) then max(COLONNE) \
+		when max(COLONNE) > min(COLONNE) + interval 'JOURS d' then null \
+		when min(COLONNE)::date = min(COLONNE) then \
+			case \
+				when min(case when COLONNE <> COLONNE::date then COLONNE end) < min(COLONNE) + interval '1d' then min(case when COLONNE <> COLONNE::date then COLONNE end) \
+				else min(COLONNE) \
+			end \
+		else min(COLONNE) \
+	end
