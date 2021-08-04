@@ -221,7 +221,6 @@ $$
 		
 		-- Historisation et suppression.
 		
-		-- À FAIRE: si detrou a donné lieu à une première entrée, et que DETROU_CIMETIERE, alors pas la peine d'ajouter une nouvelle entrée: il nous suffirait de compléter celle tout juste modifiée.
 		perform ohoh(nomTable, ancien, nouveau);
 		
 		execute format
