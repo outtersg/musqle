@@ -31,6 +31,7 @@
 -- Configuration ---------------------------------------------------------------
 -- Avant d'invoquer ce fichier, possibilité de définir:
 
+#if 0
 -- OHOH_COLS, OHOH_COLS_DEF
 --   Colonnes de préambule des tables OHOH_SUFFIXE.
 --   Si la table d'historisation est créée par ailleurs, seule OHOH_COLS est à définir.
@@ -47,6 +48,13 @@
 --   Si définie, des conditions supplémentaires s'appliquent à l'historisation.
 --   Ex.:
 --     #define OHOH_COND id > 0
+-- OHOH_MAJ
+--   Si définie, est d'abord tentée le recyclage d'une entrée d'historique.
+--   Ex. pour recycler si une historisation de la même entrée a déjà été faite dans les 5 dernières minutes:
+--     #define OHOH_COLS_DEF 0::bigint remplace_par bigint, now() date_histo, 0::int nrevs
+--     #define OHOH_COLS     nouveau, clock_timestamp(), 0
+--     #define OHOH_MAJ      , nrevs = nrevs + 1 where date_histo >= now() - interval('5 minutes')
+#endif
 
 #define OHOH_SUFFIXE _poubelle
 
@@ -88,6 +96,8 @@ $f$
 	end;
 $f$;
 
+-- À FAIRE: #if defined(OHOH_ MAJ) mais celle-ci n'est pas de la forme ", <champ> = <val> where <cond>", erreur.
+
 -- Fonction de création de la fonction ohoh_.
 -- S'agissant de nombreux replace() sur une expression statique (#define etc.), on a en effet intérêt à effectuer ces replace() à la construction plutôt qu'à chaque exécution (même si l'optimiseur PostgreSQL saura les calculer une seule fois, c'est toujours une de trop, de plus d'un point de vue lisibilité de la fonction définitive on y gagne).
 
@@ -119,11 +129,24 @@ $f$
 		(
 			$$
 				OHOH_CORPS_RETRAITE_DEBUT
+#if defined(OHOH_MAJ)
+				with
+					u as
+					(
+						update <nomTable>OHOH_SUFFIXE
+						set id = id OHOH_MAJ and id = $1
+						returning id
+					)
+#endif
 				insert into <nomTable>OHOH_SUFFIXE
 					select OHOH_COLS, * from <nomTable> where id in ($1)
 #if defined(OHOH_COND)
 					and OHOH_COND
 #endif
+#if defined(OHOH_MAJ)
+					and not exists(select 1 from u)
+#endif
+
 				OHOH_CORPS_RETRAITE_FIN
 				$$,
 				'<nomTable>', nomTable
