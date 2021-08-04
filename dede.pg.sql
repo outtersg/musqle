@@ -47,6 +47,10 @@
 --   Suffixe accolé à un nom de table pour obtenir le nom de la table d'historisation des entrées supprimées par dede.
 --   La table cimetière doit posséder un certain nombre de colonnes techniques pour consignation de la suppression, suivies d'une copie des colonnes de la table d'origine (il faut donc répercuter sur la table cimetière tout ajout ou changement de colonne dans la table source).
 --   La table cimetière est créée automatiquement si elle n'existe pas au moment de l'appel à dede().
+-- DEDE_DETROU
+--   Si définie, un détroussages est tenté pour améliorer les chances de réussite de la fusion:
+--   les deux entrées sont alignées au maximum, en complétant les champs null,
+--   et pour les champs différant déterminant (via configuration supplémentaire) une valeur moyennée commune.
 -- Voir aussi les constantes OHOH_* dans ohoh.pg.sql (configuration de la table d'historisation des entrées supprimées).
 
 #if defined DEDE_DIFF_COLONNES_IGNOREES
@@ -163,7 +167,9 @@ $$
 			from diffterie(nomTable, format('{"(%s,%s)"}', nouveau, ancien)::diff_ids[], diffSaufSurColonnes, nullRecessifSurColonnes) d;
 			if found then
 				-- Dernière chance d'éradiquer les différences:
+#if not defined(DEDE_DETROU)
 				if current_setting('dede.detrou', true) is not null then
+#endif
 					-- Mode détroussages: s'il existe des différences on essaie de les combler.
 					-- À FAIRE?: ne pas détrouer les champs que diffterie n'aurait pas jugés importants. En effet les règles pour ignorer (diff) ou agréger quand même (detrou) ne sont pas sur le même modèle, donc detrou pourrait coincer sur un champ dont diffterie aurait dit "celui-là pas grave s'il diffère".
 					with
@@ -173,7 +179,9 @@ $$
 					select array_agg(d) into diffs
 					from unnest(diffs) d
 					where not exists(select 1 from detrou where oui = champ);
+#if not defined(DEDE_DETROU)
 				end if;
+#endif
 				-- Bon, certains champs restent impossibles à concilier. On lâche l'affaire et notre appelant.
 				if array_length(diffs, 1) > 0 then
 			return query
