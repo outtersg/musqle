@@ -247,6 +247,7 @@ create aggregate min(boolean) (sfunc = booland_statefunc, stype = boolean);
 --------------------------------------------------------------------------------
 -- Agrégats
 
+-- Si les dates diffèrent mais restent dans une plage de JOURS jours, la date *max* est prise comme valeur agrégée.
 #define DETROU_AGREG_DATE_FLOUE_MAX(JOURS) \
 	case \
 		when min(COLONNE) is not distinct from max(COLONNE) then max(COLONNE) \
