@@ -106,6 +106,31 @@ $$;
 
 #include current_setting.pg.sql
 
+-- Définition de la config OHOH si sont utilisées les constantes (obsolètes) DEDE_CIMETIERE_*
+#if defined(DEDE_CIMETIERE_COLS) and !defined(OHOH_COLS)
+#define OHOH_COLS DEDE_CIMETIERE_COLS
+#endif
+#if defined(DEDE_CIMETIERE_COLS_DEF) and !defined(OHOH_COLS_DEF)
+#define OHOH_COLS_DEF DEDE_CIMETIERE_COLS_DEF
+#endif
+
+-- Conversion des paramètres DETROU_CIMETIERE_* (obsolètes).
+#if defined(DETROU_CIMETIERE_COLS) and !defined(DETROU_HISTO_COMM)
+#define _DETROU_CIMETIERE_COLS DETROU_CIMETIERE_COLS
+#undef DETROU_CIMETIERE_COLS
+N'utilisez plus DETROU_CIMETIERE_COLS (valeur: "_DETROU_CIMETIERE_COLS").
+À la place définissez un DETROU_HISTO_COMM pour préciser le commentaire.;
+#endif
+#if defined(DETROU_HISTO_COMM)
+#if defined(DETROU_CIMETIERE) and not defined(OHOH_SUFFIXE)
+#set OHOH_SUFFIXE DETROU_CIMETIERE
+#endif
+#if defined(DEDE_CIMETIERE) and not defined(OHOH_SUFFIXE)
+#set OHOH_SUFFIXE DEDE_CIMETIERE
+#endif
+#include ohoh.pg.sql
+#endif
+
 -- Détroussages Approximatif des Doublons pour les Aligner
 -- Mais bon detrou est plus explicite comme nom.
 create or replace function detrou

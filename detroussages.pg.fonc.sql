@@ -18,14 +18,6 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-#if defined(DEDE_CIMETIERE) and defined(DETROU_CIMETIERE_COLS) and not defined(DETROU_CIMETIERE)
-#set DETROU_CIMETIERE DEDE_CIMETIERE
-#endif
-
-#if defined(DETROU_CIMETIERE) and not defined(DETROU_CIMETIERE_COLS)
-#define DETROU_CIMETIERE_COLS nouveau
-#endif
-
 #define for_COLONNE_in_cols \
 	$$||(select string_agg(replace(replace($$
 #define done_COLONNE_in_cols \
@@ -109,17 +101,19 @@ with
 		and array_length(nons, 1) is null -- Eh oui, un tableau vide a une longueur nulle et non 0!
 		$$ else '' end||$$
 	),
-#if defined(DETROU_CIMETIERE)
+#if defined(DETROU_HISTO_COMM)
+#if 0
 	$$||case when exists(select 1 from pg_tables where nomTable||'DETROU_CIMETIERE' in (schemaname||'.'||tablename, tablename)) then $$
+#endif
 	histo as
 	(
-		insert into $$||nomTable||$$DETROU_CIMETIERE
 			with ids as (select id, ids from afaire join daccord using(tache))
-			select DETROU_CIMETIERE_COLS, t.*
-			from ids join $$||nomTable||$$ t using(id)
-		returning id
+		-- Le count() nous garantit un seul résultat, ce qui nous assure de pouvoir ensuite faire une jointure sur le résultat sans risquer d'exploser la cardinalité.
+		select count(ohoh('$$||nomTable||$$', id, null, DETROU_HISTO_COMM)) n from ids
 	),
+#if 0
 	$$ else '' end||$$
+#endif
 #endif
 	maj0 as
 	(
@@ -130,6 +124,10 @@ with
 			, COLONNE = afaire.COLONNE
 			done_COLONNE_in_cols
 		from afaire
+#if defined(DETROU_HISTO_COMM)
+		-- Jointure avec histo pour être sûrs qu'elle est appelée (si histo utilisait un update ou un insert PostgreSQL l'appellerait systématiquement, mais comme il a une forme de select il nous faut forcer la jointure).
+		join histo on true
+#endif
 		where _source.id = afaire.id
 		returning afaire.tache, _source.id, afaire.ouis
 #if defined(DETROU_DEROULE)
