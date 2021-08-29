@@ -261,3 +261,54 @@ create aggregate min(boolean) (sfunc = booland_statefunc, stype = boolean);
 			end \
 		else min(COLONNE) \
 	end
+
+-- Pond l'option qui agrège selon une énumération (avec priorité croissante: le dernier élément prend le pas sur les précédents).
+create or replace function detrou_agreg_enum(enum text[], valNull text)
+	returns text
+	immutable
+	language plpgsql
+as
+$f$
+	declare
+		colonne text;
+		res text;
+	begin
+		-- Utilisation du ! (en début de liste ASCII) pour que le max sorte de préférence toute valeur non préfixée !,
+		-- c'est-à-dire non gérée: ainsi par prudence cette dernière fera échouer la fusion.
+		-- Un nullif permet d'écarter ce cas, puis le substr retire le préfixe de travail.
+		-- À FAIRE: si valNull, reconvertir en sortie de detrou la valeur en null.
+		colonne := coalesce($$coalesce(COLONNE, '$$||valNull||$$')$$, 'COLONNE');
+		with
+			vals as
+			(
+				select replace(format('%2s', i), ' ', '0') i, enum[i] val
+				from generate_subscripts(enum, 1) i(i)
+			)
+		select 
+			$$DETROU_AGREG:
+				case
+					when min($$||colonne||$$) = max($$||colonne||$$) then min(COLONNE)
+					when min(COLONNE) is null then null
+					else
+						substr
+						(
+							nullif
+							(
+								max
+								(
+									case $$||colonne||string_agg(format($$
+										when '%s' then '!%s'||$$||colonne, val, i), '')||$$
+										else 'null'
+									end
+								),
+								'null'
+							),
+							4
+						)
+				end
+			$$
+		into res
+		from vals;
+		return res;
+	end;
+$f$;
