@@ -281,7 +281,11 @@ $f$
 		with
 			vals as
 			(
+#if `select count(*) from version() where version ~ '^PostgreSQL ([0-8]\.|9\.[0-2]\.)'` == 1
+				select repeat('0', 2 - length(i::text))||i i, enum[i] val
+#else
 				select replace(format('%2s', i), ' ', '0') i, enum[i] val
+#endif
 				from generate_subscripts(enum, 1) i(i)
 			)
 		select 
