@@ -54,7 +54,7 @@ with
 			-- supposée + rapide (une seule au lieu des 2 passes min et max) et + efficace (dès la première valeur ≠ on peut sortir (en tt cas marquer l'accu ĉ noop).
 			-- En pratique + lent, car min et max ultra optimisées, cf. tests/agg.date.sql
 			for_COLONNE_in_cols
-			, $$||coalesce(agreg, $$ case when max(COLONNE_TRADUITE) = min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE) end $$)||$$ COLONNE
+			, $$||coalesce(agreg, $$ case when max(COLONNE_TRADUITE) = min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE) end $$)||$$ as COLONNE
 			, count(COLONNE_TRADUITE) COLONNE__nv__ -- Nombre de valeurs non null sur cette colonne.
 			done_COLONNE_in_cols
 		from taches join $$||nomTable||$$ _source on _source.id = any(taches.ids)
@@ -88,7 +88,7 @@ with
 		select
 			maj.tache, _source.id,
 			for_COLONNE_in_cols
-			case when 'COLONNE' = any(ouis) then daccord.COLONNE else COLONNE_TRADUITE end COLONNE,
+			case when 'COLONNE' = any(ouis) then daccord.COLONNE else COLONNE_TRADUITE end as COLONNE,
 			done_COLONNE_in_cols
 			ouis
 		from maj
