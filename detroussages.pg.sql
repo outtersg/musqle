@@ -73,6 +73,14 @@ create table DETROU_COLONNES_IGNOREES
 #define DETROU_AGREG agreg
 #endif
 
+#if !defined(DETROU_COLONNES_EXPR)
+#define DETROU_COLONNES_EXPR 0
+#endif
+
+#if !defined(DETROU_AGREG)
+#define DETROU_AGREG 0
+#endif
+
 -- Du hstore sans devoir s'assurer la présence de l'extension.
 drop type if exists detrou_cv cascade;
 create type detrou_cv as (c text, v text);
@@ -181,20 +189,23 @@ $dft$
 		colsTraduites detrou_cv[];
 		agregats detrou_cv[];
 	begin
-#if defined(DETROU_COLONNES_EXPR)
-		-- Si la table de paramétrage des colonnes spéciales possède une option de traduction de la valeur, on prend.
-		select array_agg((i.c, regexp_replace(options, '^.*DETROU_COLONNES_EXPR: *', ''))::detrou_cv)
-		into colsTraduites
-		from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t)
-		and options ~ '(^|[,;]) *DETROU_COLONNES_EXPR *:';
+		-- Si la table de paramétrage des colonnes spéciales possède:
+		-- - une option de traduction de la valeur
+		-- - une fonction d'agrégation de valeurs différentes
+		-- on prend.
+#for VARIABLE in colsTraduites agregats
+#if VARIABLE == "colsTraduites"
+#set PREFIXE DETROU_COLONNES_EXPR
+#elif VARIABLE == "agregats"
+#set PREFIXE DETROU_AGREG
 #endif
-#if defined(DETROU_AGREG)
-		-- Si la table de paramétrage des colonnes spéciales définit la fonction d'agrégation de valeurs différentes, on prend.
-		select array_agg((i.c, regexp_replace(options, '^.*DETROU_AGREG: *', ''))::detrou_cv)
-		into agregats
+#if PREFIXE
+		select array_agg((i.c, regexp_replace(options, '^.*PREFIXE: *', ''))::detrou_cv)
+		into VARIABLE
 		from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t)
-		and options ~ '(^|[,;]) *DETROU_AGREG *:';
+		and options ~ '(^|[,;]) *PREFIXE *:';
 #endif
+#done
 		
 		select array_agg(column_name::text) into cols from information_schema.columns
 		where nomTable in (table_name, table_schema||'.'||table_name)
@@ -202,7 +213,7 @@ $dft$
 		and
 		(
 			is_nullable = 'YES'
-#if defined(DETROU_COLONNES_EXPR)
+#if DETROU_COLONNES_EXPR
 			or exists(select 1 from unnest(colsTraduites) tt where tt.c = column_name)
 #endif
 		)
