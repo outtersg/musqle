@@ -25,6 +25,7 @@
 	from unnest(cols) t(col) \
 	left join unnest(colsTraduites) tt(c, v) on tt.c = t.col \
 	left join unnest(agregats) ta(col, agreg) on ta.col = t.col \
+	left join unnest(agressifs) tag(col, agressif) on tag.col = t.col \
 	)||$$
 #define array_agg_cols(CONDITION) \
 	regexp_replace \
@@ -54,7 +55,11 @@ with
 			-- supposée + rapide (une seule au lieu des 2 passes min et max) et + efficace (dès la première valeur ≠ on peut sortir (en tt cas marquer l'accu ĉ noop).
 			-- En pratique + lent, car min et max ultra optimisées, cf. tests/agg.date.sql
 			for_COLONNE_in_cols
-			, $$||coalesce(agreg, $$ case when max(COLONNE_TRADUITE) = min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE) end $$)||$$ as COLONNE
+			, $$||coalesce
+			(
+				agressif,
+				$$ case when max(COLONNE_TRADUITE) $$||case when agreg is not null then 'is not distinct from' else '=' end||$$ min(COLONNE_TRADUITE) then max(COLONNE_TRADUITE)$$||coalesce(' else '||agreg, '')||$$ end $$
+			)||$$ as COLONNE
 			, count(COLONNE_TRADUITE) COLONNE__nv__ -- Nombre de valeurs non null sur cette colonne.
 			done_COLONNE_in_cols
 		from taches join $$||nomTable||$$ _source on _source.id = any(taches.ids)

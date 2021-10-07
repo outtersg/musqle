@@ -72,6 +72,15 @@ create table DETROU_COLONNES_IGNOREES
 #if defined(DETROU_AGREG) and DETROU_AGREG == 1
 #define DETROU_AGREG agreg
 #endif
+-- AGRESSIF: AGRÉgation Sans Souci des Identités Faciles:
+-- donne entièrement la main à la fonction d'agrégation, sans la précéder d'un case when min() = max() then max() qui permet d'optimiser les cas faciles (au détriment des valeurs null qui sont ignorées par min() et max()).
+-- Avec AGRESSIF, la fonction peut donner à null une signification particulière.
+#if defined(DETROU_AGREG) and !defined(DETROU_AGRESSIF)
+#define DETROU_AGRESSIF 1
+#endif
+#if defined(DETROU_AGRESSIF) and DETROU_AGRESSIF == 1
+#define DETROU_AGRESSIF agressif
+#endif
 
 #if !defined(DETROU_COLONNES_EXPR)
 #define DETROU_COLONNES_EXPR 0
@@ -79,6 +88,9 @@ create table DETROU_COLONNES_IGNOREES
 
 #if !defined(DETROU_AGREG)
 #define DETROU_AGREG 0
+#endif
+#if !defined(DETROU_AGRESSIF)
+#define DETROU_AGRESSIF 0
 #endif
 
 -- Du hstore sans devoir s'assurer la présence de l'extension.
@@ -188,16 +200,19 @@ $dft$
 		cols text[];
 		colsTraduites detrou_cv[];
 		agregats detrou_cv[];
+		agressifs detrou_cv[];
 	begin
 		-- Si la table de paramétrage des colonnes spéciales possède:
 		-- - une option de traduction de la valeur
 		-- - une fonction d'agrégation de valeurs différentes
 		-- on prend.
-#for VARIABLE in colsTraduites agregats
+#for VARIABLE in colsTraduites agregats agressifs
 #if VARIABLE == "colsTraduites"
 #set PREFIXE DETROU_COLONNES_EXPR
 #elif VARIABLE == "agregats"
 #set PREFIXE DETROU_AGREG
+#elif VARIABLE == "agressifs"
+#set PREFIXE DETROU_AGRESSIF
 #endif
 #if PREFIXE
 		select array_agg((i.c, regexp_replace(options, '^.*PREFIXE: *', ''))::detrou_cv)
