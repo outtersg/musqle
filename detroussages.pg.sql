@@ -273,6 +273,7 @@ create aggregate min(boolean) (sfunc = booland_statefunc, stype = boolean);
 		when min(COLONNE) is not distinct from max(COLONNE) then max(COLONNE) \
 		when min(COLONNE) >= max(COLONNE) - interval 'JOURS days' then max(COLONNE) \
 	end
+#define detrou_agreg_date_floue_max(JOURS) $$ DETROU_AGRESSIF: DETROU_AGREG_DATE_FLOUE_MAX(JOURS) $$
 
 -- Si les dates diffèrent mais restent dans une plage de JOURS jours, la date *min* est prise comme valeur agrégée.
 -- Exception: si deux dates min émergent, le même jour mais l'une arrondie au jour l'autre avec un horodatage, c'est cette dernière, considérée plus précise, qui est choisie.
@@ -287,6 +288,7 @@ create aggregate min(boolean) (sfunc = booland_statefunc, stype = boolean);
 			end \
 		else min(COLONNE) \
 	end
+#define detrou_agreg_date_floue_min_detaillee(JOURS) $$ DETROU_AGRESSIF: DETROU_AGREG_DATE_FLOUE_MIN_DETAILLEE(JOURS) $$
 
 -- Pond l'option qui agrège selon une énumération (avec priorité croissante: le dernier élément prend le pas sur les précédents).
 create or replace function detrou_agreg_enum(enum text[], valNull text)
@@ -315,7 +317,7 @@ $f$
 				from generate_subscripts(enum, 1) i(i)
 			)
 		select 
-			$$DETROU_AGREG:
+			$$DETROU_AGRESSIF:
 				case
 					when min($$||colonne||$$) = max($$||colonne||$$) then min(COLONNE)
 					when min(COLONNE) is null then null
