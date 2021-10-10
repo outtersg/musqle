@@ -205,6 +205,7 @@ $dft$
 		colsTraduites detrou_cv[];
 		agregats detrou_cv[];
 		agressifs detrou_cv[];
+		nulls detrou_cv[];
 	begin
 		-- Si la table de paramétrage des colonnes spéciales possède:
 		-- - une option de traduction de la valeur
@@ -250,6 +251,10 @@ $dft$
 		-- On colle tout bonnement le tableau à la fin d'agregats. On espère qu'il n'y aura pas de cas où sont définies à la fois des valeurs récessives ET une formule d'agrégation à part: comment les combinerait-on?
 		select agregats||ra into agregats from ra;
 #endif
+		select array_agg((i.c, regexp_replace(regexp_replace(options, '^.*(^|[,;]) *null *= *', ''), ' *([,;].*)?$', ''))::detrou_cv)
+		into nulls
+		from DETROU_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t)
+		and options ~ '(^|[,;]) *null *=';
 		
 		select array_agg(column_name::text) into cols from information_schema.columns
 		where nomTable in (table_name, table_schema||'.'||table_name)
@@ -346,6 +351,7 @@ $f$
 				from generate_subscripts(enum, 1) i(i)
 			)
 		select 
+			coalesce('null = '||valNull||', ', '')||
 			$$DETROU_AGRESSIF:
 				case
 					when min($$||colonne||$$) = max($$||colonne||$$) then min(COLONNE)

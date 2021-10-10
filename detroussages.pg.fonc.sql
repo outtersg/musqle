@@ -26,6 +26,7 @@
 	left join unnest(colsTraduites) tt(c, v) on tt.c = t.col \
 	left join unnest(agregats) ta(col, agreg) on ta.col = t.col \
 	left join unnest(agressifs) tag(col, agressif) on tag.col = t.col \
+	left join unnest(nulls) tn(col, equivalent_null) on tn.col = t.col \
 	)||$$
 #define array_agg_cols(CONDITION) \
 	regexp_replace \
@@ -124,9 +125,10 @@ with
 	(
 		update $$||nomTable||$$ _source
 		set
+			-- À FAIRE: sur l'equivalent_null, prendre null ou son équivalent selon la valeur la plus fréquemment observée dans le jeu d'entrées.
 			id = _source.id -- Histoire de pouvoir commencer par une virgule ensuite.
 			for_COLONNE_in_cols
-			, COLONNE = afaire.COLONNE
+			, COLONNE = $$||coalesce($$case when afaire.COLONNE = '$$||replace(equivalent_null, '''', $$''$$)||$$' then null else afaire.COLONNE end$$, 'afaire.COLONNE')||$$
 			done_COLONNE_in_cols
 		from afaire
 #if defined(DETROU_HISTO_COMM)
