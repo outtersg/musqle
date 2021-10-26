@@ -149,8 +149,10 @@ $$
 		if diffSaufSurColonnes is not null then
 #if defined DEDE_DIFF_COLONNES_IGNOREES
 			diffSaufSurColonnes := (select array_agg(i.c) from DEDE_DIFF_COLONNES_IGNOREES i where nomTable in (i.s||'.'||i.t, i.t) DEDE_DIFF_COLONNES_IGNOREES_OPTIONS)||diffSaufSurColonnes;
-#if defined(DEDE_DIFF_COLONNES_RECESSIVES_VAL) or defined(DEDE_DIFF_COLONNES_RECESSIVES_FILTRE)
-#if not defined(DEDE_DIFF_COLONNES_RECESSIVES_VAL)
+#if defined(DEDE_DIFF_RECESSIF) or defined(DEDE_DIFF_COLONNES_RECESSIVES_FILTRE)
+#if defined(DEDE_DIFF_RECESSIF)
+#define DEDE_DIFF_COLONNES_RECESSIVES_VAL diff_recessifs_options(i.c, i.options, 'DEDE_DIFF_RECESSIF')
+#else
 #define DEDE_DIFF_COLONNES_RECESSIVES_VAL i.c
 #endif
 #if not defined(DEDE_DIFF_COLONNES_RECESSIVES_FILTRE)
@@ -361,12 +363,8 @@ $$
 $$
 language plpgsql;
 
--- La fonction suivante peut être utilisée en:
--- #define DEDE_DIFF_COLONNES_RECESSIVES_VAL diff_recessifs_options(i.c, i.options, 'récessif')
-create or replace function diff_recessifs_options(champ text, options text, motCle text) returns table(recessif text) immutable language sql as
+create or replace function dede_options_suffixees(options text, motCle text) returns table(val text) immutable language sql as
 $$
-	with vals as
-	(
 		select
 			regexp_replace
 			(
@@ -374,14 +372,17 @@ $$
 				format(' %s$|^%s:', motCle, motCle),
 				''
 			)
-			val
-	)
+			val;
+$$;
+
+create or replace function diff_recessifs_options(champ text, options text, motCle text) returns table(recessif text) immutable language sql as
+$$
 	select
 		case val
 			when 'null' then champ
 			else champ||':'||regexp_replace(val, '^"(.*)"$', '\1')
 		end
-	from vals;
+	from dede_options_suffixees(options, motCle) vals;
 $$;
 
 #if 0
