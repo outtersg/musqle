@@ -93,6 +93,10 @@ create table DETROU_COLONNES_IGNOREES
 #define DETROU_AGRESSIF 0
 #endif
 
+#if defined(DEDE_DIFF_RECESSIF) and !defined(DETROU_RECESSIF)
+#define DETROU_RECESSIF DEDE_DIFF_RECESSIF
+#endif
+
 -- Du hstore sans devoir s'assurer la présence de l'extension.
 drop type if exists detrou_cv cascade;
 create type detrou_cv as (c text, v text);
@@ -221,6 +225,31 @@ $dft$
 		and options ~ '(^|[,;]) *PREFIXE *:';
 #endif
 #done
+#if defined(DETROU_RECESSIF)
+		-- Les valeurs récessives enrichissent agregats (car elles sont agrégeables à n'importe quoi).
+		with
+			cvrec as
+			(
+				select i.c, dede_options_suffixees(options, 'DETROU_RECESSIF') v
+				from DETROU_COLONNES_IGNOREES i
+				where nomTable in (i.s||'.'||i.t, i.t)
+			),
+			crec as
+			(
+				select c, 'case when '||c||' not in ('||string_agg(''''||v||'''', ',')||') then '||c||' end' v
+				from cvrec
+				-- Les règles sur "null récessif" ne nous intéressent pas, car detrou les considère déjà naturellement récessifs.
+				where v <> 'null'
+				group by c
+			),
+			r as
+			(
+				select (c, format('case when min(%s) = max(%s) then min(%s) end', v, v, v))::detrou_cv t from crec
+			),
+			ra as (select array_agg(t) ra from r)
+		-- On colle tout bonnement le tableau à la fin d'agregats. On espère qu'il n'y aura pas de cas où sont définies à la fois des valeurs récessives ET une formule d'agrégation à part: comment les combinerait-on?
+		select agregats||ra into agregats from ra;
+#endif
 		
 		select array_agg(column_name::text) into cols from information_schema.columns
 		where nomTable in (table_name, table_schema||'.'||table_name)
