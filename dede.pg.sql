@@ -18,11 +18,12 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
--- Fulbert-Dédé
+-- Fulbert / Dédé-Paul
 -- dede: DÉdoublonnage blinDÉ, ou DÉdoublonnage DÉcontracté car la fonction nous garantit qu'on ne casse rien.
+-- paul: Pour Assainir Une Ligne
 -- fulbert:
 --         Fusion        (deux données référençant la même réalité)
---         Unilatérale   (on ramène tout à un seul des deux enregistrements)
+--         Unilatérale   (on ramène tout à un seul des deux enregistrements; ou Universelle, car générique)
 --         Liens         (en particulier les entrées liées par une clé étrangère)
 --       + Bretelles     (mais on historise aussi l'intégralité de l'entrée, en cas de "clé étrangère applicative" (dépendance entre tables non déclarée en base mais sur laquelle repose l'applicatif)
 --     des Entrées
