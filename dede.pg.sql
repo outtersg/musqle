@@ -167,7 +167,7 @@ $$
 			if found then
 				-- Dernière chance d'éradiquer les différences:
 #if not defined(DEDE_DETROU)
-				if current_setting('dede.detrou', true) is not null then
+				if current_setting('dede.detrou', true) = '1' then
 #endif
 					-- Mode détroussages: s'il existe des différences on essaie de les combler.
 					-- À FAIRE?: ne pas détrouer les champs que diffterie n'aurait pas jugés importants. En effet les règles pour ignorer (diff) ou agréger quand même (detrou) ne sont pas sur le même modèle, donc detrou pourrait coincer sur un champ dont diffterie aurait dit "celui-là pas grave s'il diffère".
