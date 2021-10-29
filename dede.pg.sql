@@ -348,13 +348,13 @@ $$
 #endif
 	end;
 $$
-language plpgsql;
+language plpgsql stable;
 
 create or replace function dede_dependances(nomTable text) returns table(nom text, type char, vs text, vt text, vc text, ds text, dt text, dc text) as
 $$
 	select * from dede_dependances(nomTable, '{}');
 $$
-language sql;
+language sql stable;
 
 create or replace function dede_exec(req text) returns void as
 $$
