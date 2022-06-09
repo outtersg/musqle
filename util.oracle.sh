@@ -36,6 +36,18 @@ quelletable()
 	guillemette() { sed -e "s/ /','/g" ; }
 	trucs="`echo "$*" | guillemette`"
 	
+	nFaits=0
+	enCours()
+	{
+		shift
+		colonne="$1" ; shift
+		info="$*"
+		
+		nFaits=`expr $nFaits + 1`
+		progression="$nFaits / $nAFaire"
+		printf "\\r%s" "$progression"
+	}
+	
 	{
 		cat <<TERMINE
 set pagesize 0
@@ -52,15 +64,26 @@ TERMINE
 	
 	nAFaire=`cat /tmp/temp.tables.? | wc -l`
 	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat /tmp/temp.tables.? | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
+	{
+		i=0
 	for f in /tmp/temp.tables.[0123]
 	do
 		{
 			echo "set pagesize 0;"
 			while read t c
 			do
+				echo "? $i $t.$c" >&6
 				echo "select $QUOI, '$t.$c' from $t where $c in ('$trucs');"
 			done < $f
 		} | $BDD_SQLEUR 2>&1 | sed -e 's/^ *//' | $GROUI &
+		i=`expr $i + 1`
 	done
 	wait
+	} 6>&1 | while read l
+	do
+		case "$l" in
+			"?"*) enCours $l ;;
+			*) printf "\\r" ; echo "$l" ;;
+		esac
+	done
 }
