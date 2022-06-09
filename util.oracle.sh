@@ -20,6 +20,12 @@ quelletable()
 	STATS="and num_rows > 0"
 	if [ "x$1" = x-a ] ; then STATS="and (num_rows is null or num_rows > 0)" ; shift ; fi
 	
+	groui() { grep '^oui' ; }
+	grouin() { grep '^[1-9]' ; }
+	QUOI="'oui', row_id"
+	GROUI=groui
+	if [ "x$1" = x-n ] ; then QUOI="count(1)" ; GROUI=grouin ; shift ; fi
+	
 	# Si le premier paramètre ressemble à un nom de colonne, on bascule sur cette colonne.
 	c=row_id
 	case "$1" in
@@ -35,25 +41,26 @@ quelletable()
 set pagesize 0
 set feedback off
 
-select t.table_name
+select t.table_name||' '||c.column_name
 from all_tables t, all_tab_columns c
 where
-	t.owner = '$BDD_QUI' and c.table_name = t.table_name and c.owner = t.owner and lower(column_name) = lower('$c')
+	t.owner = '$BDD_QUI' and c.table_name = t.table_name and c.owner = t.owner and lower(column_name) like lower('`echo "$c" | sed -e 's#_#\\_#g'`') escape '\\'
 	$STATS
 order by t.table_name desc;
 TERMINE
 	} | $BDD_SQLEUR | awk '{f="/tmp/temp.tables."(NR%4);print>f}'
 	
-	printf "Recherche parmi %d tables\n" "`cat /tmp/temp.tables.? | wc -l`" >&2
+	nAFaire=`cat /tmp/temp.tables.? | wc -l`
+	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat /tmp/temp.tables.? | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
 	for f in /tmp/temp.tables.[0123]
 	do
 		{
 			echo "set pagesize 0;"
-			while read t
+			while read t c
 			do
-				echo "select 'oui', '$t', $c from $t where $c in ('$trucs');"
+				echo "select $QUOI, '$t.$c' from $t where $c in ('$trucs');"
 			done < $f
-		} | $BDD_SQLEUR 2>&1 | grep "^oui" &
+		} | $BDD_SQLEUR 2>&1 | sed -e 's/^ *//' | $GROUI &
 	done
 	wait
 }
