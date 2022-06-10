@@ -36,7 +36,7 @@ quelletable()
 	guillemette() { sed -e "s/ /','/g" ; }
 	trucs="`echo "$*" | guillemette`"
 	
-	nFaits=0
+	nFaits=-4
 	enCours()
 	{
 		shift
@@ -75,7 +75,7 @@ TERMINE
 				echo "select '? $i $t.$c' from dual;"
 				echo "select $QUOI, '$t.$c' from $t where $c in ('$trucs');"
 			done < $f
-		} | $BDD_SQLEUR 2>&1 | sed -e 's/^ *//' | $GROUI &
+		} | { $BDD_SQLEUR 2>&1 ; echo "? $i (FINI)" ; } | sed -e 's/^ *//' | $GROUI &
 		i=`expr $i + 1`
 	done
 	wait
