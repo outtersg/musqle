@@ -20,8 +20,8 @@ quelletable()
 	STATS="and num_rows > 0"
 	if [ "x$1" = x-a ] ; then STATS="and (num_rows is null or num_rows > 0)" ; shift ; fi
 	
-	groui() { grep '^oui' ; }
-	grouin() { grep '^[1-9]' ; }
+	groui() { egrep '^oui|^\?' ; }
+	grouin() { grep '^[?1-9]' ; }
 	QUOI="'oui', row_id"
 	GROUI=groui
 	if [ "x$1" = x-n ] ; then QUOI="count(1)" ; GROUI=grouin ; shift ; fi
@@ -72,14 +72,14 @@ TERMINE
 			echo "set pagesize 0;"
 			while read t c
 			do
-				echo "? $i $t.$c" >&6
+				echo "select '? $i $t.$c' from dual;"
 				echo "select $QUOI, '$t.$c' from $t where $c in ('$trucs');"
 			done < $f
 		} | $BDD_SQLEUR 2>&1 | sed -e 's/^ *//' | $GROUI &
 		i=`expr $i + 1`
 	done
 	wait
-	} 6>&1 | while read l
+	} | while read l
 	do
 		case "$l" in
 			"?"*) enCours $l ;;
