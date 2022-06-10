@@ -43,7 +43,7 @@ quelletable()
 		colonne="$1" ; shift
 		info="$*"
 		
-		nFaits=`expr $nFaits + 1`
+		[ $colonne -lt 0 ] || nFaits=`expr $nFaits + 1`
 		progression="$nFaits / $nAFaire"
 		printf "\\r%s" "$progression"
 	}
@@ -83,7 +83,7 @@ TERMINE
 	do
 		case "$l" in
 			"?"*) enCours $l ;;
-			*) printf "\\r" ; echo "$l" ;;
+			*) printf "\\r" ; echo "$l" ; enCours \? -1 ;;
 		esac
 	done
 }
