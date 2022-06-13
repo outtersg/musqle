@@ -20,8 +20,12 @@ quelletable()
 	STATS="and num_rows > 0"
 	if [ "x$1" = x-a ] ; then STATS="and (num_rows is null or num_rows > 0)" ; shift ; fi
 	
-	groui() { egrep '^oui|^\?' ; }
-	grouin() { grep '^[?1-9]' ; }
+	GREP="stdbuf -oL grep"
+	EGREP="stdbuf -oL egrep"
+	SED="stdbuf -oL sed"
+	
+	groui() { $EGREP '^oui|^\?' ; }
+	grouin() { $GREP '^[?1-9]' ; }
 	QUOI="'oui', row_id"
 	GROUI=groui
 	if [ "x$1" = x-n ] ; then QUOI="count(1)" ; GROUI=grouin ; shift ; fi
@@ -75,7 +79,7 @@ TERMINE
 				echo "select '? $i $t.$c' from dual;"
 				echo "select $QUOI, '$t.$c' from $t where $c in ('$trucs');"
 			done < $f
-		} | { $BDD_SQLEUR 2>&1 ; echo "? $i (FINI)" ; } | sed -e 's/^ *//' | $GROUI &
+			} | { $BDD_SQLEUR 2>&1 ; echo "? $i (FINI)" ; } | $SED -e 's/^  *//' | $GROUI &
 		i=`expr $i + 1`
 	done
 	wait
