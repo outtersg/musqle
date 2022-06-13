@@ -18,9 +18,7 @@ quelletable()
 {
 	T=/tmp/temp.qt.$$
 	
-	# -a: récupère aussi les tables sans statistiques.
 	STATS="and num_rows > 0"
-	if [ "x$1" = x-a ] ; then STATS="and (num_rows is null or num_rows > 0)" ; shift ; fi
 	
 	GREP="stdbuf -oL grep"
 	EGREP="stdbuf -oL egrep"
@@ -30,14 +28,23 @@ quelletable()
 	grouin() { $GREP '^[?1-9]' ; }
 	QUOI="'oui', row_id"
 	GROUI=groui
-	if [ "x$1" = x-n ] ; then QUOI="count(1)" ; GROUI=grouin ; shift ; fi
 	
-	# Si le premier paramètre ressemble à un nom de colonne, on bascule sur cette colonne.
 	c=row_id
-	case "$1" in
-		*[-\ ]*|[0-9]*) true ;;
-		*_*|id|ID) c="$1" ; shift ;;
-	esac
+	
+	while [ $# -gt 0 ]
+	do
+		case "$1" in
+			# -a: récupère aussi les tables sans statistiques.
+			-a) STATS="and (num_rows is null or num_rows > 0)" ;;
+			-n) QUOI="count(1)" ; GROUI=grouin ;;
+	# Si le premier paramètre ressemble à un nom de colonne, on bascule sur cette colonne.
+			# Sinon on sort de la boucle (les paramètres restant sont les valeurs à rechercher).
+			*[-\ ]*|[0-9]*) break ;;
+			*_*|id|ID) c="$1" ; shift ; break ;;
+			*) break ;;
+		esac
+		shift
+	done
 	
 	guillemette() { sed -e "s/ /','/g" ; }
 	trucs="`echo "$*" | guillemette`"
