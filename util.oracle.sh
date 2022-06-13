@@ -41,6 +41,10 @@ quelletable()
 	trucs="`echo "$*" | guillemette`"
 	
 	nFaits=-4
+	if command -v incruster > /dev/null 2>&1
+	then
+		detailProgression=" "
+	fi
 	enCours()
 	{
 		shift
@@ -51,6 +55,12 @@ quelletable()
 		then
 			nFaits=`expr $nFaits + 1`
 		progression="$nFaits / $nAFaire"
+			if [ -n "$detailProgression" ]
+			then
+				detailProgression="`incruster "$progression" "$detailProgression" -b 0 / 5`"
+				detailProgression="`incruster -c "$info" "$detailProgression" -b $colonne / 5`"
+				progression="$detailProgression"
+			fi
 		fi
 		printf "\\r%s" "$progression"
 	}
@@ -93,6 +103,11 @@ TERMINE
 			*)
 				# On efface notre progression et on se replace en début de ligne.
 				printf "\\r"
+				if [ -n "$detailProgression" ]
+				then
+					largeur=`expr $COLUMNS - 1`
+					printf "%$largeur.${largeur}s\\r" ""
+				fi
 				# On affiche notre trouvaille.
 				echo "$l"
 				# Et on remet notre progression sur la ligne d'en-dessous.
