@@ -42,6 +42,13 @@ quelletable()
 	guillemette() { sed -e "s/ /','/g" ; }
 	trucs="`echo "$*" | guillemette`"
 	
+	chrono()
+	{
+		chrono_la="`date +%s`" # À défaut de millisecondes.
+		eval "chrono_info=\"\$chrono_info_$1\" ; chrono_info_$1=\"\$2\" ; chrono_t0=\$chrono_t0_$1 ; chrono_t0_$1=$chrono_la"
+		[ -z "$chrono_info" ] || echo "`expr $chrono_la - $chrono_t0` $chrono_info" >> $T.chrono
+	}
+	
 	nFaits=-4
 	if command -v incruster > /dev/null 2>&1
 	then
@@ -63,6 +70,7 @@ quelletable()
 				detailProgression="`incruster -c "$info" "$detailProgression" -b $colonne / 5`"
 				progression="$detailProgression"
 			fi
+			chrono $colonne "$info"
 		fi
 		printf "\\r%s" "$progression"
 	}
