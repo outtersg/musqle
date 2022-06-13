@@ -44,11 +44,14 @@ quelletable()
 	enCours()
 	{
 		shift
-		colonne="$1" ; shift
+		colonne="`expr $1 + 1`" ; shift
 		info="$*"
 		
-		[ $colonne -lt 0 ] || nFaits=`expr $nFaits + 1`
+		if [ $colonne -gt 0 ] # S'il y a du mouvement (si c'est 0, c'est juste pour réaffichage).
+		then
+			nFaits=`expr $nFaits + 1`
 		progression="$nFaits / $nAFaire"
+		fi
 		printf "\\r%s" "$progression"
 	}
 	
@@ -87,7 +90,14 @@ TERMINE
 	do
 		case "$l" in
 			"?"*) enCours $l ;;
-			*) printf "\\r" ; echo "$l" ; enCours \? -1 ;;
+			*)
+				# On efface notre progression et on se replace en début de ligne.
+				printf "\\r"
+				# On affiche notre trouvaille.
+				echo "$l"
+				# Et on remet notre progression sur la ligne d'en-dessous.
+				enCours \? -1
+				;;
 		esac
 	done
 }
