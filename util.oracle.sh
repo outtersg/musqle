@@ -16,6 +16,8 @@ sqloracle()
 # https://chartio.com/resources/tutorials/how-to-list-all-tables-in-oracle/
 quelletable()
 {
+	T=/tmp/temp.qt.$$
+	
 	# -a: récupère aussi les tables sans statistiques.
 	STATS="and num_rows > 0"
 	if [ "x$1" = x-a ] ; then STATS="and (num_rows is null or num_rows > 0)" ; shift ; fi
@@ -77,13 +79,13 @@ where
 	$STATS
 order by t.table_name desc;
 TERMINE
-	} | $BDD_SQLEUR | awk '{f="/tmp/temp.tables."(NR%4);print>f}'
+	} | $BDD_SQLEUR | awk '{f="'"$T"'.t."(NR%4);print>f}'
 	
-	nAFaire=`cat /tmp/temp.tables.? | wc -l`
-	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat /tmp/temp.tables.? | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
+	nAFaire=`cat $T.t.? | wc -l`
+	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat $T.t.? | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
 	{
 		i=0
-	for f in /tmp/temp.tables.[0123]
+	for f in $T.t.[0123]
 	do
 		{
 			echo "set pagesize 0;"
