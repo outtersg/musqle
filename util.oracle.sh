@@ -138,3 +138,44 @@ TERMINE
 	done
 	echo
 }
+
+# Quelle Table Sauf Grosses:
+# prépare un paramètre à coller derrière un quelletable -x, pour lui demander de *ne pas* parcourir ces tables / colonnes la prochaine fois.
+# Se fonde sur le diagnostic pondu par une précédente passe, donc on est obligés de le faire tourner une première fois.
+qtsg()
+{
+	[ -n "$MOINS_X_ACTUEL" ] || MOINS_X_ACTUEL="youpitralala"
+	INSOUTENABLE=400 # Nombre de secondes où vraiment ça ne sert à rien.
+	
+	rm -f /tmp/chrono.sqlite3
+	sqlite3 /tmp/chrono.sqlite3 "create table t0 (n integer, t text, c text);"
+	cat /tmp/temp.qt.*.chrono \
+	| egrep -v "$MOINS_X_ACTUEL|(FINI)" \
+	| sed -e "s/\\./','/" -e "s/ /,'/" -e "s/$/');/" -e "s/^/insert into t0 values (/" \
+	| sqlite3 /tmp/chrono.sqlite3
+	
+	echo "À ajouter à un -x en premier paramètre du prochain quelletable que vous lancerez:"
+	sqlite3 /tmp/chrono.sqlite3 \
+	"
+		create table t as select max(n) n, t, c from t0 group by 2, 3;
+		with
+			champs as
+			(
+				select distinct
+					t,
+					group_concat(c, '|') over fen champs,
+					group_concat(n, '|') over fen nindiv
+				from t
+				where n > $INSOUTENABLE window fen as (partition by t order by n desc rows between unbounded preceding and unbounded following)
+			),
+			gros as
+			(
+				select sum(n), t, champs, nindiv from t join champs using(t) group by 2 order by 1 desc
+			),
+			exprgros as
+			(
+				select group_concat(t||'.('||champs||')', '|') from gros -- . et non \\. car le fichier intermédiaire utilise pour le moment un espace plutôt qu'un point.
+			)
+		select * from exprgros;
+	"
+}
