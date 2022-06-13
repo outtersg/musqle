@@ -26,8 +26,11 @@ quelletable()
 	
 	groui() { $EGREP '^oui|^\?' ; }
 	grouin() { $GREP '^[?1-9]' ; }
+	saufCertaines() { egrep -v "$SAUF" ; }
+	
 	QUOI="'oui', row_id"
 	GROUI=groui
+	FILTRE_TABLES=cat
 	
 	c=row_id
 	
@@ -37,6 +40,7 @@ quelletable()
 			# -a: récupère aussi les tables sans statistiques.
 			-a) STATS="and (num_rows is null or num_rows > 0)" ;;
 			-n) QUOI="count(1)" ; GROUI=grouin ;;
+			-x) SAUF="$2" ; FILTRE_TABLES=saufCertaines ; shift ;;
 	# Si le premier paramètre ressemble à un nom de colonne, on bascule sur cette colonne.
 			# Sinon on sort de la boucle (les paramètres restant sont les valeurs à rechercher).
 			*[-\ ]*|[0-9]*) break ;;
@@ -94,7 +98,7 @@ where
 	$STATS
 order by t.table_name desc;
 TERMINE
-	} | $BDD_SQLEUR | awk '{f="'"$T"'.t."(NR%4);print>f}'
+	} | $BDD_SQLEUR | $FILTRE_TABLES | awk '{f="'"$T"'.t."(NR%4);print>f}'
 	
 	nAFaire=`cat $T.t.? | wc -l`
 	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat $T.t.? | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
