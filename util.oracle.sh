@@ -100,4 +100,5 @@ TERMINE
 				;;
 		esac
 	done
+	echo
 }
