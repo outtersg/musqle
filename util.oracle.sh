@@ -113,7 +113,7 @@ TERMINE
 				echo "select '? $i $t.$c' from dual;"
 				echo "select $QUOI, '$t.$c' from $t where $c in ('$trucs');"
 			done < $f
-			} | { $BDD_SQLEUR 2>&1 ; echo "? $i (FINI)" ; } | $SED -e 's/^  *//' | $GROUI &
+			} | { $BDD_SQLEUR 2>&1 ; echo "? $i (FINI)" ; } | $SED -e 's/^[ 	][	 ]*//' | $GROUI &
 		i=`expr $i + 1`
 	done
 	wait
