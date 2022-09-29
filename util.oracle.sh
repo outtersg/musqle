@@ -17,6 +17,8 @@ QT_N=4
 # https://chartio.com/resources/tutorials/how-to-list-all-tables-in-oracle/
 quelletable()
 {
+	# À FAIRE: si des stats ont tourné, classer par durée d'exécution décroissante (les inconnues en premier).
+	# À FAIRE: répartir de manière à ce que si une file a terminé, elle prenne des tâches d'autres files.
 	T=/tmp/temp.qt.$$
 	
 	STATS="and num_rows > 0"
