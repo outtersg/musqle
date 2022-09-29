@@ -12,6 +12,7 @@ sqloracle()
 	sqlplus -s $BDD_QUI/$BDD_MDP@"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=$BDD_HOTE)(PORT=$BDD_PORT))(CONNECT_DATA=(SID=$BDD_NOM)))"
 }
 
+QT_N=4
 # Dans quelle table figure tel RowID?
 # https://chartio.com/resources/tutorials/how-to-list-all-tables-in-oracle/
 quelletable()
@@ -60,7 +61,7 @@ quelletable()
 		[ -z "$chrono_info" ] || echo "`expr $chrono_la - $chrono_t0` $chrono_info" >> $T.chrono
 	}
 	
-	nFaits=-4
+	nFaits=-$QT_N
 	if command -v incruster > /dev/null 2>&1
 	then
 		detailProgression=" "
@@ -77,8 +78,9 @@ quelletable()
 		progression="$nFaits / $nAFaire"
 			if [ -n "$detailProgression" ]
 			then
-				detailProgression="`incruster "$progression" "$detailProgression" -b 0 / 5`"
-				detailProgression="`incruster -c "$info" "$detailProgression" -b $colonne / 5`"
+				nColsAff=$((QT_N + 1))
+				detailProgression="`incruster "$progression" "$detailProgression" -b 0 / $nColsAff`"
+				detailProgression="`incruster -c "$info" "$detailProgression" -b $colonne / $nColsAff`"
 				progression="$detailProgression"
 			fi
 			chrono $colonne "$info"
@@ -98,14 +100,15 @@ where
 	$STATS
 order by t.table_name desc;
 TERMINE
-	} | $BDD_SQLEUR | $FILTRE_TABLES | awk '{f="'"$T"'.t."(NR%4);print>f}'
+	} | $BDD_SQLEUR | $FILTRE_TABLES | awk '{f="'"$T"'.t."(NR%'$QT_N');print>f}'
 	
 	nAFaire=`cat $T.t.? | wc -l`
 	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat $T.t.? | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
 	{
 		i=0
-	for f in $T.t.[0123]
+			while [ $i -lt $QT_N ]
 	do
+			f=$T.t.$i
 		{
 			echo "set pagesize 0;"
 			while read t c
