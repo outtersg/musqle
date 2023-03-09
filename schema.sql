@@ -50,6 +50,23 @@ update colonnes set type = replace(type, 'character', 'char');
 update colonnes set type = replace(type, ' without time zone', ''); -- La doc de PostgreSQL explique qu'un timestamp est "without time zone" par défaut, nul besoin de le mentionner donc.
 -- À FAIRE: les USER-DEFINED.
 
+create temporary table cles as
+	-- https://stackoverflow.com/a/1152321
+	select
+		vc.id vc_id, dc.id dc_id
+	from
+		tables dt -- De Table
+		join information_schema.table_constraints tc on tc.table_schema||'.'||tc.table_name = dt.nom
+		join information_schema.key_column_usage kcu on tc.constraint_name = kcu.constraint_name and tc.table_schema = kcu.table_schema
+		join information_schema.constraint_column_usage ccu on ccu.constraint_name = tc.constraint_name and ccu.table_schema = tc.table_schema
+		join tables vt on ccu.table_schema||'.'||ccu.table_name = vt.nom -- Vers Table
+		join colonnes dc on dc.table_id = dt.id and dc.nom = kcu.column_name
+		join colonnes vc on vc.table_id = vt.id and vc.nom = ccu.column_name
+		where tc.constraint_type = 'FOREIGN KEY'
+;
+alter table cles add constraint vc_id foreign key (vc_id) references colonnes(id) on delete cascade;
+alter table cles add constraint dc_id foreign key (dc_id) references colonnes(id) on delete cascade;
+
 #if defined(RETRAVAIL)
 #include RETRAVAIL
 #endif
@@ -87,6 +104,8 @@ create temporary table colonnes_aff as
 	from colonnes
 ;
 
+update colonnes_aff c set aff = replace(aff, '<td', '<td port="c'||pos||'"') where exists (select 1 from cles where cles.dc_id = c.id);
+
 with
 	t as
 	(
@@ -98,5 +117,15 @@ with
 	)
 select regexp_replace(descr, '(&nbsp;| )*(<(i|font)[^>]*>(<(i|font)[^>]*>)? *(</(i|font)[^>]*>)?</(i|font)>)', '', 'g') -- Dommage, on n'a pas possibilité de faire du récursif où la seconde parenthèse (les <i></i>) fasse référence à elle-même (\2) pour traiter en une seule passe les imbrications de <i><font><b> etc.
 from t order by table_id, partie, pos;
+
+select vt.ida||' -> '||dt.ida||':c'||dc.pos
+from
+	cles
+	join colonnes_aff vc on vc.id = cles.vc_id
+	join tables_aff vt on vt.id = vc.table_id
+	join colonnes_aff dc on dc.id = cles.dc_id
+	join tables_aff dt on dt.id = dc.table_id
+;
+-- À FAIRE: ne pointer sur le bloc table que si la cible de la clé étrangère est clé primaire de ladite table. Sinon pointer sur la colonne.
 
 select '}';
