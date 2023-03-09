@@ -28,6 +28,7 @@
 create temporary table tables as
 	select row_number() over() id, table_schema||'.'||table_name nom
 	from information_schema.tables
+	where table_schema not like 'pg_%' and table_schema not in ('information_schema')
 ;
 alter table tables add constraint tables_uid unique(id);
 
