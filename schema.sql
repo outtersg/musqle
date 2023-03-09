@@ -71,22 +71,29 @@ digraph Schema
 	node [ shape=none fontname="Lato" fontsize=12 ];
 $$);
 
+create temporary table tables_aff as
+	select
+		id, nom, 't_'||replace(nom, '.', '_') ida,
+		'[ label=<'||e'\n'||(select replace(c, '@nom', nom) from html where t = 'td') affd,
+		(select c from html where t = 'tf')||e'\n'||'> ]'||e'\n' afff
+	from tables
+;
+
+create temporary table colonnes_aff as
+	select
+		table_id, pos, id,
+		(select replace(replace(c, '@nom', nom), '@type', type) from html where t = 'c') aff
+	from colonnes
+;
+
 with
 	t as
 	(
-		select
-			id table_id, 0 partie, 0 pos,
-			't_'||replace(nom, '.', '_')||' [ label=<'||e'\n'
-			||(select replace(c, '@nom', nom) from html where t = 'td')
-			descr
-		from tables
+		select id table_id, 0 partie, 0 pos, 0 colonne_id, ida||' '||affd descr from tables_aff
 		union
-		select id, 10, 0, (select c from html where t = 'tf')||e'\n'||'> ]'||e'\n' from tables
+		select id, 10, 0, 0, afff from tables_aff
 		union
-		select
-			table_id, 1, pos,
-			(select replace(replace(c, '@nom', nom), '@type', type) from html where t = 'c')
-		from colonnes
+		select table_id, 1, pos, id, aff from colonnes_aff
 	)
 select regexp_replace(descr, '(&nbsp;| )*(<(i|font)[^>]*>(<(i|font)[^>]*>)? *(</(i|font)[^>]*>)?</(i|font)>)', '', 'g') -- Dommage, on n'a pas possibilité de faire du récursif où la seconde parenthèse (les <i></i>) fasse référence à elle-même (\2) pour traiter en une seule passe les imbrications de <i><font><b> etc.
 from t order by table_id, partie, pos;
