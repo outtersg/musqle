@@ -65,6 +65,10 @@ as
 				select OHOH_COLS_DEF, t.* from '||nomTable||' t where rownum < 0
 		'
 		;
+		execute immediate 'create index '||nomTable||'OHOH_SUFFIXE'||'_id_i on '||nomTable||'OHOH_SUFFIXE(DEDE_ID)';
+		-- À FAIRE: les deux suivants en fonction du contenu de OHOH_COLS_DEF
+		execute immediate 'create index '||nomTable||'OHOH_SUFFIXE'||'_par_i on '||nomTable||'OHOH_SUFFIXE(rempl_par)';
+		execute immediate 'create index '||nomTable||'OHOH_SUFFIXE'||'_cause_i on '||nomTable||'OHOH_SUFFIXE(rempl_cause)';
 		commit;
 		select LOCAL(ohoh_)(nomTable, ancien, nouveau, commentaire) into r from dual;
 		return r;
