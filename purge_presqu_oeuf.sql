@@ -39,6 +39,7 @@ Utilisation: purge_presqu_oeuf.sql TABLE=… [COLID=…] (FRANGE=…|FRANGEMN=�
     Nombre de minutes susceptibles de mouvement.
   COLCREA
     Nom de la colonne, de type timestamp, portant la date de création de l''entrée.
+	N.B.: si COLID et COLCREA sont toutes deux mentionnées, la frange sera calculée initialement sur COLCREA mais exprimée sur COLID (considérée indexée et donc plus leste pour les manipulations de masse).
   FAIRE
     Si non définie, on n''effectue que la passe préparatoire (mise de côté des données historiques).
     Si 1, la passe préparatoire est effectuée, et si elle prend moins de REACTIVITE mn, la passe définitive (purge) est effectuée dans la foulée.
@@ -52,9 +53,11 @@ Utilisation: purge_presqu_oeuf.sql TABLE=… [COLID=…] (FRANGE=…|FRANGEMN=�
 
 #define TORIG TABLE
 #undef TABLE
-#if !defined(COLID)
+#if !defined(COLID) and defined(FRANGE)
 #define COLID id
 #endif
+
+-- À FAIRE: par date, pour les tables qui n'ont pas d'id mais ont une date créa indexée.
 
 #set THISTO concat(TORIG, "_tmp_histo")
 #set TFRANGE concat(TORIG, "_tmp_frange")
@@ -84,29 +87,46 @@ select 'Taille actuelle: '||total from tailletables where 'TORIG' in (table_name
 --      ont maintenant entre 15 et 20 mn, donc deviennent historiques. Ce sont ces données qui sont traitées en passe 2.
 
 #if defined(FRANGEMN)
+#if defined(COLID)
 #set DEBUTFRANGE `select coalesce(min(COLID), 0) from TORIG where COLCREA >= now() - interval 'FRANGEMN minutes'`
 #if DEBUTFRANGE == 0
 #set DEBUTFRANGE `select coalesce(max(COLID) + 1, 0) from TORIG where COLCREA < now() - interval 'FRANGEMN minutes'`
 #endif
 #else
+ouh là;
+#endif
+#else
 #set DEBUTFRANGE `with ids as (select COLID from TORIG order by COLID desc limit FRANGE) select coalesce(min(COLID), 0) from ids`
 #endif
-select 'Frange active: '||coalesce(sum(case when COLID >= DEBUTFRANGE then 1 end), 0)||' entrées / '||count(1) from TORIG;
+
+#if defined(COLID)
+#define DANSFRANGE COLID >= DEBUTFRANGE
+#else
+ouh là;
+#endif
+
+select 'Frange active: '||coalesce(sum(case when DANSFRANGE then 1 end), 0)||' entrées / '||count(1) from TORIG;
 
 select HORO||' Copie de l''historique...';
 #set T0 `select clock_timestamp()`
 
 #if `select count(1) from pg_tables where 'THISTO' in (tablename, schemaname||'.'||tablename)` == 1
+#if defined(COLID)
 #set DEJAFAITS `select coalesce(max(COLID), 0) from THISTO`
+#define COMPLEMENTFRANGE COLID between DEJAFAITS + 1 and DEBUTFRANGE - 1
+#else
+ouh là;
+-- À FAIRE?: en fonction de la précision de COLCREA, il y a le risque que notre précédente passe soit arrivée pile entre deux entrées de même date; l'une se retrouverait dans THISTO et l'autre non, alors il faudrait adapter en insérant un delete from THISTO where = ; insert where >= ; au lieu du seul insert where >
+#endif
 #bavard
 insert into THISTO
 select * from TORIG
-where COLID between DEJAFAITS + 1 and DEBUTFRANGE - 1;
+where COMPLEMENTFRANGE;
 #else
 #bavard
 create table THISTO as
 select * from TORIG
-where COLID < DEBUTFRANGE;
+where not (DANSFRANGE);
 #endif
 #silence
 
@@ -124,7 +144,7 @@ select HORO||' ... ('||(clock_timestamp() - 'T0')||')';
 #set T0 `select clock_timestamp()`
 select HORO||' Copie de la frange active...';
 #bavard
-create table TFRANGE as select * from TORIG where COLID >= DEBUTFRANGE;
+create table TFRANGE as select * from TORIG where DANSFRANGE;
 #silence
 select HORO||' ... ('||(clock_timestamp() - 'T0')||')';
 #set T0 `select clock_timestamp()`
