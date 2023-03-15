@@ -24,7 +24,7 @@
 -- On ne peut donc placer une limite claire entre les entrées présentes (figées) et les absentes (à venir).
 
 #if !defined(REACTIVITE)
-#define REACTIVITE 3
+#define REACTIVITE 10
 #endif
 
 #if !defined(TABLE) || !(defined(FRANGE) || (defined(FRANGEMN) && defined(COLCREA)))
@@ -42,7 +42,7 @@ Utilisation: purge_presqu_oeuf.sql TABLE=… [COLID=…] (FRANGE=…|FRANGEMN=�
 	N.B.: si COLID et COLCREA sont toutes deux mentionnées, la frange sera calculée initialement sur COLCREA mais exprimée sur COLID (considérée indexée et donc plus leste pour les manipulations de masse).
   FAIRE
     Si non définie, on n''effectue que la passe préparatoire (mise de côté des données historiques).
-    Si 1, la passe préparatoire est effectuée, et si elle prend moins de REACTIVITE mn, la passe définitive (purge) est effectuée dans la foulée.
+    Si 1, la passe préparatoire est effectuée, la passe définitive (purge) est tentée et si elle prend moins de REACTIVITE secondes, elle est effectuée dans la foulée (/!\ ordre de grandeur seulement, car simulation sur une table similaire mais sans les contraintes de la table opérationnelle).
 	Si 2, passe préparatoire et passe définitive sont forcées.
     Il est préconisé de lancer une première fois sans l''option, puis une seconde fois avec l''option FAIRE=1 en période de moindre activité.
 ;
@@ -132,7 +132,26 @@ where not (DANSFRANGE);
 
 select HORO||' ... ('||(clock_timestamp() - 'T0')||')';
 
-#if defined(FAIRE) and (FAIRE >= 2 or (FAIRE == 1 and `select case when clock_timestamp() - 'T0' < interval 'REACTIVITE minutes' then 1 else 0 end`))
+#if defined(FAIRE) and FAIRE == 1
+drop table if exists TFRANGE;
+drop table if exists TFRANGE_simu;
+select HORO||' Simulation du transfert définitif...';
+#set T0 `select clock_timestamp()`
+#bavard
+create table TFRANGE as select * from TORIG where DANSFRANGE;
+create table TFRANGE_simu (like TORIG including all);
+insert into TFRANGE_simu select * from TFRANGE;
+#silence
+#set FAIRE `select case when clock_timestamp() - 'T0' < interval 'REACTIVITE seconds' then 2 else 1 end`
+select HORO||' ... ('||(clock_timestamp() - 'T0')||')';
+#if FAIRE < 2
+select JAUNE||'=> trop long'||BLANC||', essayez une valeur de RE'||'ACTIVITE plus élevée (immobilisation de la table) ou attendez une période de moindre remplissage';
+#endif
+drop table TFRANGE_simu;
+drop table TFRANGE;
+#endif
+
+#if defined(FAIRE) and FAIRE >= 2
 #set T0 `select clock_timestamp()`
 
 select HORO||' Obtention du verrou...';
