@@ -171,7 +171,11 @@ select HORO||' ... ('||(clock_timestamp() - 'T0')||')';
 select 'Taille après: '||total from tailletables where 'TORIG' in (table_name, table_schema||'.'||table_name);
 select HORO||' === Terminé TORIG ===';
 
--- À FAIRE: drop table THISTO; drop table TFRANGE;
+select JAUNE||'Vous pourrez supprimer les tables THISTO et TFRANGE'||BLANC||' après avoir vérifié que leur contenu avait bien été restauré sur la table principale.';
+#if defined(COLID) and defined(COLCREA)
+select 'Ex. pour vérifier la densité de votre table (qu''aucun trou ne s''est formé):';
+select $$select min(COLID), min(COLCREA), max(COLCREA), count(1) from TORIG where COLCREA >= now() - interval '2 hours' group by COLID / 100 order by 1;$$;
+#endif
 
 #else
 
