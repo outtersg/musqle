@@ -58,8 +58,6 @@ Utilisation: purge_presqu_oeuf.sql TABLE=… [COLID=…] (FRANGE=…|FRANGEMN=�
 #define COLID id
 #endif
 
--- À FAIRE: par date, pour les tables qui n'ont pas d'id mais ont une date créa indexée.
-
 #set THISTO concat(TORIG, "_tmp_histo")
 #set TFRANGE concat(TORIG, "_tmp_frange")
 
@@ -94,7 +92,7 @@ select 'Taille actuelle: '||total from tailletables where 'TORIG' in (table_name
 #set DEBUTFRANGE `select coalesce(max(COLID) + 1, 0) from TORIG where COLCREA < now() - interval 'FRANGEMN minutes'`
 #endif
 #else
-ouh là;
+#set DEBUTFRANGE `select now() - interval 'FRANGEMN minutes'`
 #endif
 #else
 #set DEBUTFRANGE `with ids as (select COLID from TORIG order by COLID desc limit FRANGE) select coalesce(min(COLID), 0) from ids`
@@ -103,7 +101,7 @@ ouh là;
 #if defined(COLID)
 #define DANSFRANGE COLID >= DEBUTFRANGE
 #else
-ouh là;
+#define DANSFRANGE COLCREA >= 'DEBUTFRANGE'::timestamp
 #endif
 
 select 'Frange active: '||coalesce(sum(case when DANSFRANGE then 1 end), 0)||' entrées / '||count(1) from TORIG;
@@ -116,8 +114,11 @@ select HORO||' Copie de l''historique...';
 #set DEJAFAITS `select coalesce(max(COLID), 0) from THISTO`
 #define COMPLEMENTFRANGE COLID between DEJAFAITS + 1 and DEBUTFRANGE - 1
 #else
-ouh là;
--- À FAIRE?: en fonction de la précision de COLCREA, il y a le risque que notre précédente passe soit arrivée pile entre deux entrées de même date; l'une se retrouverait dans THISTO et l'autre non, alors il faudrait adapter en insérant un delete from THISTO where = ; insert where >= ; au lieu du seul insert where >
+#if `with n as (select 1 from THISTO limit 1) select count(1) from n` == 1
+#define COMPLEMENTFRANGE COLCREA > (select max(COLCREA) from THISTO) and not (DANSFRANGE)
+#else
+#define COMPLEMENTFRANGE not (DANSFRANGE)
+#endif
 #endif
 #bavard
 insert into THISTO
