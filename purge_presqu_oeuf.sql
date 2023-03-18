@@ -48,6 +48,11 @@ Utilisation: purge_presqu_oeuf.sql TABLE=… [COLID=…] (FRANGE=…|FRANGEMN=�
 ;
 #endif
 
+-- Cf. note dans COMPLEMENTFRANGE.
+#if defined(FRANGEMN) and FRANGEMN <= 0
+La frange doit être de minimum 1 mn.;
+#endif
+
 #format delim \t sans-en-tête
 #silence
 #include couleurs.sql
@@ -115,6 +120,12 @@ select HORO||' Copie de l''historique...';
 #define COMPLEMENTFRANGE COLID between DEJAFAITS + 1 and DEBUTFRANGE - 1
 #else
 #if `with n as (select 1 from THISTO limit 1) select count(1) from n` == 1
+-- Notons que, même si la précision de COLCREA est limitée (à la seconde),
+-- permettant à deux entrées arrivées non simultanées d'avoir le même horodatage,
+-- le seul risque que purge_presqu_oeuf intervienne pile entre les deux serait avec un FRANGEMN=0
+-- (entrée A créée à 22:18:05.1, purge_presqu_oeuf à 22:18:05.5, entrée B créée à 22:18:05.9: A et B avec une COLCREA tronquée à 22:18:05).
+-- En ce cas la première serait prise dans THISTO, et lors d'une prochain passe de purge_presqu_oeuf la seconde serait *oubliée*
+-- du fait du COLCREA > 22:18:05.
 #define COMPLEMENTFRANGE COLCREA > (select max(COLCREA) from THISTO) and not (DANSFRANGE)
 #else
 #define COMPLEMENTFRANGE not (DANSFRANGE)
