@@ -50,6 +50,7 @@ Utilisation: purge_presqu_oeuf.sql TABLE=… [COLID=…] (FRANGE=…|FRANGEMN=�
 
 #format delim \t sans-en-tête
 #silence
+#include couleurs.sql
 
 #define TORIG TABLE
 #undef TABLE
