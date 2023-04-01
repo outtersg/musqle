@@ -62,7 +62,7 @@ as
 		select LOCAL(ohoh_)(nomTable, ancien, nouveau, commentaire) into r from dual;
 		return r;
 	exception when table_does_not_exist then
-		select LOCAL(ohoh_colonnes(nomTable)) into colonnes from dual;
+		select LOCAL(ohoh_colonnes(nomTable, null)) into colonnes from dual;
 		execute immediate
 		'
 			create table '||nomTable||'OHOH_SUFFIXE as
@@ -87,7 +87,7 @@ as
 	-- Bien penser au commit (sans quoi ORA-06519: transaction autonome active détectée et annulée).
 	pragma autonomous_transaction;
 	begin
-		select LOCAL(ohoh_colonnes(nomTable)) into colonnes from dual;
+		select LOCAL(ohoh_colonnes(nomTable, null)) into colonnes from dual;
 		execute immediate
 		'
 			insert into '||nomTable||'OHOH_SUFFIXE
@@ -105,10 +105,10 @@ as
 -- Bref pour une question de perfs, merci d'appeler ohoh_colonnes avec le nom de table sans le schéma!
 
 #define TABLE_NOMMÉE(x) (lower(table_name) = lower(x) or lower(owner||'.'||table_name) = lower(x))
-#define TABLE_NOMMÉE(x) table_name = upper(x)
+#define TABLE_NOMMÉE(x) (table_name = upper(x) and (schema is null or owner = upper(schema)))
 
 -- https://stackoverflow.com/questions/29116396/workaround-for-ora-00997-illegal-use-of-long-datatype
-create or replace function LOCAL(ohoh_colonnes)(nomTable in varchar2)
+create or replace function LOCAL(ohoh_colonnes)(nomTable in varchar2, schema in varchar2)
 	return clob
 as
 	colonnes clob;
