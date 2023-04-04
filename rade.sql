@@ -42,6 +42,20 @@
 #if not defined(RADE_TEMP)
 #define RADE_TEMP rade_temp
 #endif
+#if not defined(RADE_TEMP_TEMP)
+-- La table de travail est-elle temporaire?
+-- Inconvénient: en cas de plantage d'une tâche qui l'alimentait, on perd toute trace, il faut recommencer à 0. Et possibilité d'insérer une phase de validation visuelle sur cette table entre l'identification des cas et leur reversement vers la table persistente.
+-- Avantage: isolation des tâches, chacune tourne avec sa copie de la table.
+-- Par défaut non.
+#define RADE_TEMP_TEMP
+#else
+#if :driver = "oracle"
+-- /!\ La table de travail ne peut être temporaire sous Oracle.
+#define RADE_TEMP_TEMP
+#else
+#define RADE_TEMP_TEMP temporary
+#endif
+#endif
 
 #if defined(RADE_INSTALLER)
 #if not defined(RADE_FONCTION)
@@ -57,9 +71,11 @@
 -- À la première invocation (table temp inexistante), on est sur de la préparation du terrain.
 -- Les fois suivantes, si la table temporaire contient des entrées, l'invocation du fichier déclenche leur affichage puis déversement vers la table persisteuse.
 
+#if not defined(RADE_TEMP_EXISTE)
 #set RADE_TEMP_EXISTE `select count(*) from pg_tables where tablename = 'RADE_TEMP'`
+#endif
 
-#if defined(RADE_INSTALLER) or RADE_TEMP_EXISTE
+#if defined(RADE_INSTALLER) or !RADE_TEMP_EXISTE
 #if defined(RADE_INSTALLER)
 create or replace function RADE_FONCTION()
 	returns void
@@ -69,12 +85,12 @@ $$
 	begin
 #endif
 
-		create temporary table RADE_TEMP as
-			select i.indicateur, detail.id, detail.commentaire
-			from RADE_DETAIL detail join RADE_REF i on i.id = detail.indicateur_id
-			limit 0;
+#if RADE_TEMP_TEMP
+#include rade_init.sql
+#endif
 
 #if defined(RADE_INSTALLER)
 	end;
 $$;
+#endif
 #endif

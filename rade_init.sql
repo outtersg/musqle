@@ -20,10 +20,12 @@
 
 -- /!\ Fichier technique, inclus par rade.sql (qui contient toutes les définitions nécessaires). Ne pas inclure directement.
 
+#if !defined(RADE_DEJA)
 #if :driver = "pgsql"
 #set RADE_DEJA `select count(*) from pg_tables where tablename = 'RADE_REF'`
-#elif !defined(RADE_DEJA)
+#else
 #set RADE_DEJA 0
+#endif
 #endif
 
 #if !RADE_DEJA
@@ -63,4 +65,19 @@ create table RADE_STATS
 );
 AUTOPRIMARY_INIT(RADE_STATS, id)
 
+#endif
+
+#if (!RADE_DEJA and !RADE_TEMP_TEMP) or (RADE_TEMP_TEMP and !RADE_DEJA_TEMP)
+create RADE_TEMP_TEMP table RADE_TEMP
+(
+	q timestamp default MAINTENANT(),
+	indicateur T_TEXT(255),
+	id T_TEXT(255),
+	commentaire T_TEXT
+);
+#define RADE_DEJA_TEMP 1
+#endif
+
+#if !defined(RADE_DEJA)
+#define RADE_DEJA 1
 #endif
