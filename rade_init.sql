@@ -33,6 +33,7 @@ create table RADE_REF
 	id AUTOPRIMARY,
 	indicateur T_TEXT(255),
 	producteur T_TEXT(255),
+	typo T_TEXT(31),
 #if :driver = "oracle"
 	delai_alerte interval day to second, -- not null default interval '0' second, -- En Oracle 12?
 	delai_retention interval day to second -- not null default interval '36' hour -- En Oracle 12?
