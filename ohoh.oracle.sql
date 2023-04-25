@@ -40,7 +40,7 @@
 #endif
 
 #if defined(OHOH_SUFFIXE) and not defined(OHOH_COLS)
-#define OHOH_COLS     nouveau, null, sysdate
+#define OHOH_COLS     nouveau, commentaire, sysdate
 #define OHOH_COLS_DEF cast(null as DEDE_ID_TYPE_DIM) rempl_par, cast(null as varchar2(255)) rempl_cause, sysdate rempl_date
 #endif
 
@@ -91,7 +91,7 @@ as
 		execute immediate
 		'
 			insert into '||nomTable||'OHOH_SUFFIXE
-				select '||replace('OHOH_COLS', 'nouveau', ''''||nouveau||'''')||', '||colonnes||' from '||nomTable||' t where DEDE_ID in ('''||ancien||''')
+				select '||replace(replace('OHOH_COLS', 'nouveau', ''''||nouveau||''''), 'commentaire', case when commentaire is null then null else ''''||replace(commentaire, '''', '''''')||'''' end)||', '||colonnes||' from '||nomTable||' t where DEDE_ID in ('''||ancien||''')
 		';
 		commit;
 		return 1;
