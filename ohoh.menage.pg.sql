@@ -60,9 +60,10 @@ create temporary table t_cp as
 ;
 -- Les entrées qui diffèrent de leur entrée prédecesseur ne serait-ce que sur un champ, marquent une transition et sont conservées (donc sont supprimées de la liste à supprimer. Tout le monde suit?).
 #set JOINTURE `select regexp_replace(regexp_replace('OHOH_CLE', '([^ ,]+)', 'a.\1 = p.\1', 'g'), ' *, *', ' and ', 'g')`
-delete from t_cp where pos in
-(
-	select ida from qod.diff
+drop table if exists pg_temp.t_sp;
+create temporary table t_sp as
+	-- À FAIRE: un diff -q, qui sort dès qu'une différence apparaît.
+	select distinct ida from qod.diff
 	(
 		$$
 			select pos, a.*, pos, n.*
@@ -73,7 +74,8 @@ delete from t_cp where pos in
 		'{OHOH_COLQ}' -- Sont aussi ignorés tous les champs insignifiants paramétrés par table.
 		-- À FAIRE: permettre d'exclure d'autres colonnes non significatives.
 	)
-);
+;
+delete from t_cp where pos in (select ida from t_sp);
 
 -- Exécution!
 
@@ -93,5 +95,6 @@ rollback;
 select JAUNE||'(simulation seule. Pour exécuter, relancez avec FA'||'IRE=1)'||BLANC;
 #endif
 
+drop table pg_temp.t_sp;
 drop table pg_temp.t_cp;
 drop table pg_temp.t_dp;
