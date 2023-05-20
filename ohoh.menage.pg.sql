@@ -87,8 +87,9 @@ with menage as
 (
 	delete from TABLEAU t where (OHOH_CLE, OHOH_COLQ) in (select OHOH_CLE, OHOH_COLQ from t_cp)
 	returning OHOH_CLE
-)
-select count(1)||' photos redondantes de '||count(distinct OHOH_CLE)||' entrées distinctes supprimées' from menage;
+	),
+	g as (select OHOH_CLE, count(1) _n from menage group by OHOH_CLE)
+select sum(_n)||' photos redondantes de '||count(1)||' entrées distinctes supprimées' from g;
 
 #if not defined(FAIRE) or not FAIRE
 rollback;
