@@ -92,6 +92,7 @@ select count(1)||' photos redondantes de '||count(distinct OHOH_CLE)||' entrées
 
 #if not defined(FAIRE) or not FAIRE
 rollback;
+#include couleurs.sql
 select JAUNE||'(simulation seule. Pour exécuter, relancez avec FA'||'IRE=1)'||BLANC;
 #endif
 
