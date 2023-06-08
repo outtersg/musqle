@@ -18,7 +18,6 @@ QT_N=4
 quelletable()
 {
 	# À FAIRE: si des stats ont tourné, classer par durée d'exécution décroissante (les inconnues en premier).
-	# À FAIRE: répartir de manière à ce que si une file a terminé, elle prenne des tâches d'autres files.
 	T=/tmp/temp.qt.$$
 	
 	STATS="and num_rows > 0"
@@ -27,8 +26,8 @@ quelletable()
 	EGREP="stdbuf -oL egrep"
 	SED="stdbuf -oL sed"
 	
-	groui() { $EGREP '^oui|^\?' ; }
-	grouin() { $GREP '^[?1-9]' ; }
+	groui() { $EGREP '^oui|^[=?] ' ; }
+	grouin() { $GREP '^[=?1-9]' ; }
 	saufCertaines() { egrep -v "$SAUF" ; }
 	
 	QUOI="'oui', row_id"
@@ -90,6 +89,26 @@ quelletable()
 		printf "\\r%s" "$progression"
 	}
 	
+	grainAMoudre()
+	{
+		awk '
+			/^= /{
+				traiteur = $2;
+				if(getline < "'"$T.t"'" > 0)
+					print > traiteur;
+				else
+				{
+					close(traiteur);
+					system("rm "traiteur);
+				}
+				next;
+			}
+			{print}
+		'
+		rm "$T.t"
+		# Sinon en shell pour éviter de fermer le tube: https://stackoverflow.com/a/8436387
+	}
+	
 	{
 		cat <<TERMINE
 set pagesize 0
@@ -102,27 +121,30 @@ where
 	$STATS
 order by t.table_name desc;
 TERMINE
-	} | $BDD_SQLEUR | $FILTRE_TABLES | awk '{f="'"$T"'.t."(NR%'$QT_N');print>f}'
+	} | $BDD_SQLEUR | $FILTRE_TABLES > $T.t
 	
-	nAFaire=`cat $T.t.? | wc -l`
-	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat $T.t.? | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
+	nAFaire=`wc -l < $T.t`
+	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat $T.t | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
 	{
 		i=0
 			while [ $i -lt $QT_N ]
 	do
 			f=$T.t.$i
+			mkfifo $f
+			echo "= $f" # Et on se signale une première fois comme prêts à bosser.
 		{
 			echo "set pagesize 0;"
 			while read t c
 			do
 				echo "select '? $i $t.$c' from dual;"
 				echo "select $QUOI, '$t.$c' from $t where $c in ('$trucs');"
+				echo "select '= $f' from dual;" # "J'ai fini, quelqu'un peut me renvoyer du travail?"
 			done < $f
 			} | { $BDD_SQLEUR 2>&1 ; echo "? $i (FINI)" ; } | $SED -e 's/^[ 	][	 ]*//' | $GROUI &
 		i=`expr $i + 1`
 	done
 	wait
-	} | while read l
+	} | grainAMoudre | while read l
 	do
 		case "$l" in
 			"?"*) enCours $l ;;
