@@ -27,6 +27,12 @@ sqloracle()
 	sqlplus -s $BDD_QUI/$BDD_MDP@"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=$BDD_HOTE)(PORT=$BDD_PORT))(CONNECT_DATA=(SID=$BDD_NOM)))"
 }
 
+miamParam()
+{
+	eval "$2=\$1" ; shift 2
+	params="$*"
+}
+
 QT_N=4
 # Dans quelle table figure tel RowID?
 # https://chartio.com/resources/tutorials/how-to-list-all-tables-in-oracle/
