@@ -33,6 +33,63 @@ miamParam()
 	params="$*"
 }
 
+oraCopy()
+{
+	local fc=/tmp/temp.oraCopy.$$ # Fichiers de Contrôle.
+	local params="csv table" csv base table sep=";" optionsSqlldr="log=\"$fc.log\", direct=true"
+	
+	while [ $# -gt 0 ]
+	do
+		case "$1" in
+			-1) optionsSqlldr="$optionsSqlldr, skip=1" ;;
+			-b) base="$2" ; shift ;;
+			-s) sep="$2" ; shift ;;
+			*)
+				case "$params" in "") break ;; esac # Plus de param à renseigner? C'est qu'on arrive à la première colonne.
+				miamParam "$1" $params
+				;;
+		esac
+		shift
+	done
+	if [ -z "$*" -o ! -f "$csv" ]
+	then
+		echo "# Utilisation: oraCopy [-1] [-s <sép>] <csv> [-b <base>] <table> <colonne>+" >&2
+		return 1
+	fi
+	
+	local cols="`IFS=, ; echo "$*"`"
+	
+	oraParams "$base" || return 1
+	
+	{
+		# À FAIRE: peut-on ne pas préciser pas ($cols)?
+		cat <<TERMINE
+options ($optionsSqlldr)
+load data
+badfile "$fc.bad"
+append into table $table
+fields terminated by '$sep'
+trailing nullcols
+($cols)
+TERMINE
+	} > $fc.ctl
+	
+	# /!\ $BDD_NOM doit avoir été déclaré dans le tnsnames.ora,
+	#     car (en SSH vers une 11.2 en tout cas) le userid ne peut être passé sous sa forme longue).
+	#local chaineCo="$BDD_IM@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=$BDD_HOTE)(PORT=$BDD_PORT))(CONNECT_DATA=(SID=$BDD_NOM)))"
+	
+	case "$BDD_SSH" in
+		""|localhost)
+			[ -z "$BDD_ENV" ] || eval "$BDD_ENV"
+			sqlldr userid="$BDD_IM@$BDD_NOM" control=$fc.ctl data="$csv"
+			;;
+		*)
+			scp -C $fc.ctl "$csv" $BDD_SSH:/tmp/
+			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=$BDD_IM@$BDD_NOM control=$fc.ctl data=/tmp/`basename "$csv"` && rm -f $fc.ctl $fc.bad $fc.log $csvd"
+			;;
+	esac
+}
+
 QT_N=4
 # Dans quelle table figure tel RowID?
 # https://chartio.com/resources/tutorials/how-to-list-all-tables-in-oracle/
