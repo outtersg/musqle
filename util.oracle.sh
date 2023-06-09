@@ -3,8 +3,23 @@
 
 BDD_SQLEUR=sqloracle
 
+oraParams()
+{
+	if [ "x$BDD_IM" = "x$BDD_IM_calcule" ] ; then BDD_IM= ; fi
+	if [ -z "$BDD_IM" -a -n "$BDD_QUI" -a -n "$BDD_MDP" ] ; then BDD_IM="$BDD_QUI/$BDD_MDP" ; fi
+	[ -n "$BDD_HOTE" ] || BDD_HOTE=localhost
+	[ -n "$BDD_PORT" ] || BDD_PORT=1521
+	
+	if [ -z "$BDD_IM" -o -z "$BDD_NOM" ]
+	then
+		echo "# Veuillez définir les variables \$BDD_IM (ou \$BDD_QUI + \$BDD_MDP) et \$BDD_NOM" >&2
+		return 1
+	fi
+}
+
 sqloracle()
 {
+	# À FAIRE: basculer sur du oraParams()
 	[ -n "$BDD_MDP" ] || { echo "# Veuillez définir la variable \$BDD_MDP." >&2 ; return 1 ; }
 	[ -n "$BDD_HOTE" ] || BDD_HOTE=localhost
 	[ -n "$BDD_PORT" ] || BDD_PORT=1521
