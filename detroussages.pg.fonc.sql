@@ -106,6 +106,7 @@ with
 		$$||case when toutou then $$
 		and array_length(nons, 1) is null -- Eh oui, un tableau vide a une longueur nulle et non 0!
 		$$ else '' end||$$
+$$||case when toutou is not null then $$
 	),
 #if defined(DETROU_HISTO_COMM)
 #if 0
@@ -153,4 +154,5 @@ with
 			from taches join maj0 using(tache)
 		returning coalesce(ref, doublon)
 #endif
+$$ else /* toutou is null: aucune requête de modification */ '' end||$$
 	)

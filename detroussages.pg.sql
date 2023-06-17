@@ -50,6 +50,7 @@
 -- vider le cache juste après avoir effectué la modification:
 --   select set_config('detrou._detroussages_fonc_t', null);
 --   select set_config('detrou._detroussages_fonc_t_tt', null);
+--   select set_config('detrou._detroussages_fonc_t_simu', null);
 
 #if defined(DETROU_COLONNES_IGNOREES)
 #if `select count(*) from pg_tables where tablename = 'DETROU_COLONNES_IGNOREES'` = 0
@@ -161,7 +162,7 @@ create or replace function detrou
 (
 	nomTable text,
 	groupes text[],
-	toutou boolean -- TOUT OU rien. Si true, les détroussages ne sont effectués que si la totalité des champs peut être alignée.
+	toutou boolean -- TOUT OU rien. Si true, les détroussages ne sont effectués que si la totalité des champs peut être alignée. Si null, mode simulation (aucun changement n'est appliqué).
 )
 	returns table(tache bigint, id bigint, oui text[], non text[])
 	language plpgsql
@@ -174,7 +175,7 @@ $$
 		-- Génération de la fonction dédiée à cette table.
 		-- N.B.: perfs détaillées dans tests/detroussages.perfs.sql.
 		-- À FAIRE: créer dans pg_temp?
-		nomFonc := '_detroussages_fonc_'||replace(nomTable, '.', '_')||case when toutou then '_tt' else '' end;
+		nomFonc := '_detroussages_fonc_'||replace(nomTable, '.', '_')||case when toutou then '_tt' when not toutou then '' else '_simu' end;
 		coucou := current_setting('detrou.'||nomFonc, true);
 		if coucou is null or coucou = '' then
 			execute 'drop function if exists '||nomFonc||'(text[])';
