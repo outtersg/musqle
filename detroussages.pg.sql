@@ -52,6 +52,8 @@
 --   select set_config('detrou._detroussages_fonc_t_tt', null);
 --   select set_config('detrou._detroussages_fonc_t_simu', null);
 
+#include musqle.config.sql
+
 #if defined(DETROU_COLONNES_IGNOREES)
 #if `select count(*) from pg_tables where tablename = 'DETROU_COLONNES_IGNOREES'` = 0
 create table DETROU_COLONNES_IGNOREES
@@ -127,6 +129,67 @@ $$
 			from detrou(nomTable, groupes, toutou) d
 			where array_length(d.oui, 1) > 0;
 	end;
+$$;
+
+create or replace function detroudiff(nomTable text, groupes text[])
+returns table(ida DEDE_ID_TYPE, idb DEDE_ID_TYPE, champ text, a text, b text)
+language plpgsql
+as
+$F$
+	declare
+		trucs refcursor;
+	begin
+		-- Création d'un curseur pour transformer les groupes passés en paramètres, en prélèvement 2 à 2 côte à côte des entrées faisant partie du même groupe.
+		open trucs for execute
+		$$
+			with
+				taches as
+				(
+					select row_number() over() tache, string_to_array(groupe, ' ')::DEDE_ID_TYPE[] groupe
+					from unnest($2) e(groupe)
+				),
+				entrees as
+				(
+					select tache, groupe[1] ida, doublon idb
+					from taches, unnest(groupe) d(doublon)
+					where doublon <> groupe[1]
+				)
+				select a.*, b.*
+				from entrees l, $$||nomTable||$$ a, $$||nomTable||$$ b
+				where a.DEDE_ID = l.ida and b.DEDE_ID = l.idb
+		$$
+		using nomTable, groupes;
+		-- On exploite maintenant diff (rapide mais bête),
+		-- puis sur les différences signalées par diff,
+		-- on effectue un détroussages théorique pour voir si elle seraient toujours en désaccord après application des règles de convergence.
+		return query
+			with
+				diff as (select * from :SCHEMA.diff(trucs, null, null)),
+				detrou as
+				(
+					select tache, id, unnest(non) champ
+					from :SCHEMA.detrou(nomTable, groupes, null)
+					-- À FAIRE: retaper groupes pour ne considérer que ceux à doute.
+				),
+				deptitrou as -- dé-(Petits Tas d'Identifiants)-troussages
+				(
+					select array_agg(id) ids, detrou.champ
+					from detrou
+					group by tache, detrou.champ
+				)
+			select d.*
+			from diff d join deptitrou d2 on d.ida = any(d2.ids) and d.idb = any(d2.ids) and d.champ = d2.champ
+		;
+		close trucs;
+	end;
+$F$;
+
+create or replace function detroudiff(nomTable text, ida DEDE_ID_TYPE, idb DEDE_ID_TYPE)
+returns table(ida DEDE_ID_TYPE, idb DEDE_ID_TYPE, champ text, a text, b text)
+language sql
+as
+$$
+	select * from :SCHEMA.detroudiff(nomTable, array[ida||' '||idb]);
 $$;
 
 #include current_setting.pg.sql
