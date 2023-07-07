@@ -199,7 +199,9 @@ where
 	$STATS
 order by t.table_name desc;
 TERMINE
-	} | $BDD_SQLEUR | $FILTRE_TABLES > $T.t
+	} | $BDD_SQLEUR | $FILTRE_TABLES | _qttrie > $T.t
+	
+	# À FAIRE: au départ, indiquer que l'on commence à moudre (on ne commence à afficher que lorsque l'on a passé le cap des $QT_N tables, or maintenant que l'on commence par les plus longues avec _qttrie, l'interface semble bloquée un bon moment).
 	
 	nAFaire=`wc -l < $T.t`
 	printf "Recherche parmi %d colonnes de %d tables\n" "$nAFaire" "`cat $T.t | cut -d ' ' -f 1 | sort -u | wc -l`" >&2
@@ -283,4 +285,31 @@ qtsg()
 			)
 		select * from exprgros;
 	"
+}
+
+# Trie les tables des plus longues aux plus rapides, si des mesures précédentes ont été effectuées.
+_qttrie()
+{
+	# Destiné à une vieille machine, sans local, sans find -maxdepth ni sed -E, et avec un awk horriblement lent.
+	_qttrie_par=sed
+	_qttrie_script=/tmp/temp.qt.$$.tri.$par
+	
+	# Il nous faut des mesures préalables.
+	#find /tmp/ -maxdepth 1 -name "temp.qt.*.chrono" | grep -q . || { cat ; return ; }
+	stat /tmp/temp.qt.*.chrono 2> /dev/null >&2 || { cat ; return 0 ; }
+	
+	# Constitution d'un awk de tri.
+	{
+		# Le sort -nr permet de conserver la mesure la plus élevée pour une table.
+		if [ $_qttrie_par = awk ]
+		then
+		cat /tmp/temp.qt.*.chrono | sort -nr | sed -e '/^\([0-9][0-9]*\) \([^ ][^ ]*\)$/!d' -e 's##/^\2$/{ print "\1 "$0; next; }#' -e 's#[.]# #'
+		echo '{ print "999999 "$0; }'
+		else
+		cat /tmp/temp.qt.*.chrono | sort -nr | sed -e '/^\([0-9][0-9]*\) \([^ ][^ ]*\)$/!d' -e 's##/^\2$/{@s/^/\1 /@b@}#' -e 's#[.]# #' | tr @ '\012'
+		echo 's/^/999999 /'
+		fi
+	} > $_qttrie_script
+	
+	$_qttrie_par -f $_qttrie_script | sort -nr | cut -d ' ' -f 2-
 }
