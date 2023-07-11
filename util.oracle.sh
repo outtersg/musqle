@@ -15,6 +15,49 @@ oraParams()
 		echo "# Veuillez définir les variables \$BDD_IM (ou \$BDD_QUI + \$BDD_MDP) et \$BDD_NOM" >&2
 		return 1
 	fi
+	
+	_oraParams_chaine "$@"
+}
+
+_oraParams_chaine()
+{
+	case "$1" in
+		complexe) BDD_CHAINE="$BDD_IM@`_oraParams_chaineMulti "$BDD_HOTE $BDD_HOTE2 $BDD_HOTE3 $BDD_HOTE4" "$BDD_PORT" "$BDD_NOM"`" ;;
+		*) BDD_CHAINE="$BDD_IM@$BDD_HOTE:$BDD_PORT:$BDD_NOM" ;;
+	esac
+}
+
+_oraParams_chaineMulti()
+{
+	local vars="hotes port base" var hotes= hote port= base=
+	# À FAIRE: distinguer nom de service et SID.
+	# À FAIRE: options
+	while [ $# -gt 0 ]
+	do
+		case "$1" in
+			*)
+				[ -n "$vars" ] || { echo "# _oraParams_chaineMulti(): paramètre \"$1\" surnuméraire." >&2 ; return 1 ; }
+				_oraParams_chaineMulti_var "$1" $vars
+				;;
+		esac
+		shift
+	done
+	printf "(DESCRIPTION=(CONNECT_TIMEOUT=3)(RETRY_COUNT=2)"
+	case "$hotes" in
+		*[^\ ]*[\ ][^\ ]*) printf "(FAILOVER=ON)(LOAD_BALANCE=NO)" ;;
+	esac
+	for hote in $hotes
+	do
+		printf "(ADDRESS=(PROTOCOL=TCP)(HOST=$hote)(PORT=$port))"
+	done
+	printf "(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=$base)))"
+}
+
+_oraParams_chaineMulti_var()
+{
+	eval $2='"$1"'
+	shift ; shift
+	vars="$*"
 }
 
 sqloracle()
