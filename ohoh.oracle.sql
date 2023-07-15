@@ -102,18 +102,28 @@ as
 -- 3,1 s lower(table_name) = lower(x) or lower(owner||'.'||table_name) = lower(x) -- Adaptabilité maximale.
 -- 2,5 s sans les lower (si on écrit déjà dans la bonne casse)
 -- 0,3 s juste sur le nom de table.
--- Bref pour une question de perfs, merci d'appeler ohoh_colonnes avec le nom de table sans le schéma!
+-- TABLE_NOMMÉE est donc optimisée pour ce cas, un prétraitement (découpage) est à effectuer avant l'appel si l'on désire lui passer un '<schéma>.<nom>'.
 
 #define TABLE_NOMMÉE(x) (lower(table_name) = lower(x) or lower(owner||'.'||table_name) = lower(x))
 #define TABLE_NOMMÉE(x) (table_name = upper(x) and (schema is null or owner = upper(schema)))
 
 -- https://stackoverflow.com/questions/29116396/workaround-for-ora-00997-illegal-use-of-long-datatype
-create or replace function LOCAL(ohoh_colonnes)(nomTable in varchar2, schema in varchar2)
+create or replace function LOCAL(ohoh_colonnes)(nomTable_ in varchar2, schema_ in varchar2)
 	return clob
 as
 	colonnes clob;
 	versionLongue integer;
+	nomTable varchar2(255);
+	schema varchar2(255);
 	begin
+		if schema_ is null and nomTable_ like '%.%' then
+			select substr(nomTable_, 1, instr(nomTable_, '.') - 1), substr(nomTable_, instr(nomTable_, '.') + 1)
+			into schema, nomTable
+			from dual;
+		else
+			schema := schema_;
+			nomTable := nomTable_;
+		end if;
 		select
 			case when exists (select 1 from all_tab_columns where TABLE_NOMMÉE(nomTable) and data_type in ('LONG')) then 1
 			else 0
