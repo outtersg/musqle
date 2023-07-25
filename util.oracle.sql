@@ -23,6 +23,7 @@
 
 -- drop if exists manuel:
 -- https://stackoverflow.com/a/26969060/1346819
+-- Pourra enfin être inutile en Oracle 23c!
 #endif
 #define _drop_table_if_exists(nom_table, PENDANT) \
 		for rec in (select table_name from all_tables where lower(table_name) = lower(nom_table)) \
@@ -35,3 +36,4 @@
 	begin \
 		_drop_table_if_exists('nom_table',); \
 	end;
+#define /drop table if exists ([^ ]*)/i drop_table_if_exists(\1)
