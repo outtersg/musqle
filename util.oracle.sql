@@ -1,3 +1,4 @@
+#if 0
 -- Copyright (c) 2023 Guillaume Outters
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,27 +19,19 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-#include util.oracle.sql
+-- N.B.: ce fichier étant destiné à être inclus, l'ensemble de ses commentaires est encadré de #if 0 pour éviter de polluer l'incluant de nos notes.
 
 -- drop if exists manuel:
 -- https://stackoverflow.com/a/26969060/1346819
-#define _DIE_INCR n := n + 1;
-create or replace function drop_if_exists(nom_table in varchar2) return integer
-as
-	n integer;
--- https://stackoverflow.com/a/8729553
-pragma autonomous_transaction;
-begin
-	n := 0;
-	_drop_table_if_exists(nom_table, _DIE_INCR);
-	return n;
-end;
-/
-
--- begin die('nom de la table à supprimer'); end;
--- die = Drop If Exists, évidemment.
-create or replace procedure die(nom_table in varchar2) as
-begin
-	_drop_table_if_exists(nom_table,);
-end;
-/
+#endif
+#define _drop_table_if_exists(nom_table, PENDANT) \
+		for rec in (select table_name from all_tables where lower(table_name) = lower(nom_table)) \
+		loop \
+			execute immediate 'truncate table '||rec.table_name; \
+			execute immediate 'drop table '||rec.table_name; \
+			PENDANT \
+		end loop
+#define drop_table_if_exists(nom_table) \
+	begin \
+		_drop_table_if_exists('nom_table',); \
+	end;
