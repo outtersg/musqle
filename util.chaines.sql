@@ -33,10 +33,20 @@
 -- Permet de travailler sur du JSON ou du PHP serialize.
 
 #endif
-#define EXPR_ACCOLADES_ {([^{}"]+|"([^"\\]+|\\.)*"|@)*}
-#define EXPR_ACCOLADES_ECO_ {(?:[^{}"]+|"(?:[^"\\]+|\\.)*"|@)*}
-#if defined(EXPR_ACCOLADES_ECO) or (defined(:pilote) and :pilote in ("pgsql"))
+#if !defined(EXPR_ECO)
+#if defined(:pilote) and :pilote in ("pgsql")
+#define EXPR_ECO 1
+#else
+#define EXPR_ECO 0
+#endif
+#endif
+#define EXPR_CHAÎNE          "([^"\\]+|\\.)*"
+#define EXPR_CHAÎNE_ECO      "(?:[^"\\]+|\\.)*"
+#define EXPR_ACCOLADES_      {([^{}"]+|EXPR_CHAÎNE|@)*}
+#define EXPR_ACCOLADES_ECO_  {(?:[^{}"]+|EXPR_CHAÎNE_ECO|@)*}
+#if EXPR_ECO
 #define EXPR_ACCOLADES_ EXPR_ACCOLADES_ECO_
+#define EXPR_CHAÎNE EXPR_CHAÎNE_ECO
 #endif
 #set EXPR_ACCOLADES_1 replace(EXPR_ACCOLADES_, "|@", "")
 #set EXPR_ACCOLADES_2 replace(EXPR_ACCOLADES_, "@", EXPR_ACCOLADES_1)
@@ -46,7 +56,7 @@
 
 #if 0
 -- Utilisation, sur du PHP serialize:
-select regexp_replace('{ezcnl;"àfairesauter";a:1234:{coucou"coucou{salu\"{t":{cnl};miam:{bla:{"coucou{salu\"{t"}}};suite{oui}', '"àfairesauter";a:[0-9]+:EXPR_ACCOLADES_4;?', '');
+select regexp_replace('{ezcnl;"àfairesauter";a:1234:{coucou"coucou{salu\"{t":{cnl};miam:{bla:{"coucou{salu\"{t"}}};suite{oui}', '"àfairesauter";[as]:[0-9]+:(EXPR_ACCOLADES_4|EXPR_CHAÎNE);?', '');
 #endif
 
 #if 0
