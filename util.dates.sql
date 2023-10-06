@@ -20,4 +20,18 @@
 -- SOFTWARE.
 
 -- N.B.: ce fichier étant destiné à être inclus, l'ensemble de ses commentaires est encadré de #if 0 pour éviter de polluer l'incluant de nos notes.
+
+--------------------------------------------------------------------------------
+-- Pseudo-jour
+
+-- Le pseudo-jour est le jour dans le mois, mais en comptant en négatif à partir du 20.
+-- Sur un mois de 31 jours, le 31 est compté comme -1 du mois suivant (et non 0), le 30 comme -2, etc.
+
 #endif
+#if defined(:pilote) && :pilote == 'oracle'
+#define DERNIERDUMOIS(j) ((trunc(j, 'MM') + interval '1' month) - interval '1' day)
+#else
+#define DERNIERDUMOIS(j) date_trunc('month', j) + interval '1 month - 1 day'
+#endif
+#define PSEUDOJOUR(j) \
+	extract(day from j) - case when extract(day from j) >= 20 then extract(day from DERNIERDUMOIS(j)) + 1 else 0 end
