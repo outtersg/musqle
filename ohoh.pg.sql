@@ -60,9 +60,7 @@
 --     #define OHOH_MAJ      , nrevs = nrevs + 1 where date_histo >= now() - interval('5 minutes')
 #endif
 
-#if not defined(OHOH_SUFFIXE)
-#define OHOH_SUFFIXE _poubelle
-#endif
+#include ohoh.config.sql
 
 #if defined(OHOH_SUFFIXE) and not defined(OHOH_COLS)
 #define OHOH_COLS nouveau

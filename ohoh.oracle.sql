@@ -18,25 +18,11 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
-#if defined(DEDE_SCHEMA)
-#define LOCAL(t) DEDE_SCHEMA.t
-#else
-#define LOCAL(t) t
-#endif
+#include musqle.config.sql
+#include ohoh.config.sql
 
-#if not defined(DEDE_ID_TYPE)
-#define DEDE_ID_TYPE integer
-#endif
 #if not defined(DEDE_ID_TYPE_DIM)
 #define DEDE_ID_TYPE_DIM DEDE_ID_TYPE
-#endif
-
-#if not defined(DEDE_ID)
-#define DEDE_ID id
-#endif
-
-#if not defined(OHOH_SUFFIXE)
-#define OHOH_SUFFIXE _poubelle
 #endif
 
 #if defined(OHOH_SUFFIXE) and not defined(OHOH_COLS)
