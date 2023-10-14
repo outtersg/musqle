@@ -20,16 +20,7 @@
 
 -- Supprime les entrées redondantes d'une table OHOH.
 
-#if not defined(OHOH_SUFFIXE)
-#define OHOH_SUFFIXE _poubelle
-#endif
-
-#if not defined(OHOH_CLE)
-#define OHOH_CLE id, rempl_cause
-#endif
-#if not defined(OHOH_COLQ)
-#define OHOH_COLQ rempl_date
-#endif
+#include ohoh.config.sql
 
 #if not defined(TABLE)
 Erreur: vous devez définir la variable TABLE dont purger la OHOH_SUFFIXE;
