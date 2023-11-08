@@ -136,6 +136,54 @@ TERMINE
 	esac
 }
 
+# Exécute une extraction Oracle et la restitue sous forme d'un create temp table PostgreSQL, à passer dans un sql2csv.php
+# /!\ Repose sur l'inclusion de ../sqleur/sqlminus.sh
+ora2pg()
+{
+	local base sep=';' table crea temp params=table T=/tmp/temp.ora2pg.$$
+	
+	while [ $# -gt 0 ]
+	do
+		case "$1" in
+			-b) base="$2" ; shift ;;
+			-s) sep="$2" ; shift ;;
+			-t|temp) crea=1 ; temp=" temporary" ;;
+			-c) crea=1 ;;
+			*) miamParam "$1" $params || break ;;
+		esac
+		shift
+	done
+	if [ -z "$*" -o -z "$table" ]
+	then
+		cat >&2 <<TERMINE
+# Utilisation: ora2pg [-s <sép>] [-b <base>] [temp|-t|-c] <table> <fichier .sql>|<requête sql>
+  -s <sép>
+  -b <base>
+  [temp|-t|-c] <table>
+    Nom de la table portant le résultat côté PostgreSQL.
+    Le mot-clé "temp" ou l'option -t la crée temporaire.
+    L'option "-c" la crée tout bonnement.
+    Sans option elle est juste alimentée, supputée déjà créée (mais alors ora2pg perd de son intérêt, de produire la requête de création).
+  <fichier .sql>|<requête sql>
+    Requête d'extraction à jouer côté Oracle, ou fichier contenant le SQL.
+TERMINE
+		return 1
+	fi
+	
+	oraParams "$base" || return 1
+	sqlm -o "$T.csv" "$@"
+	
+	case "$BDD_SSH" in
+		""|localhost) true ;;
+		*)
+			scp -q -C "$BDD_SSH:$T.*" /tmp/
+			ssh "$BDD_SSH" rm "$T.*"
+			;;
+	esac
+	
+	rm $T.*
+}
+
 #- Quelle Table ----------------------------------------------------------------
 
 QT_N=4
