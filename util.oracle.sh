@@ -72,6 +72,7 @@ sqloracle()
 
 miamParam()
 {
+	case "$2" in "") return 1 ;; esac
 	eval "$2=\$1" ; shift 2
 	params="$*"
 }
