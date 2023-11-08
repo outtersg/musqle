@@ -171,7 +171,7 @@ TERMINE
 	fi
 	
 	oraParams "$base" || return 1
-	sqlm -o "$T.csv" "$@"
+	sqlm --null NULL -o "$T.csv" "$@"
 	
 	case "$BDD_SSH" in
 		""|localhost) true ;;
@@ -181,7 +181,54 @@ TERMINE
 			;;
 	esac
 	
+	_ora2pg
+	
 	rm $T.*
+}
+
+# À FAIRE: dans sqleur, un machin qui permette d'invoquer directement ora2pg, par exemple sous la forme:
+#   #create temp table t_bla from base_ext as 3
+#     drop table if exists t_extraction_bla;
+#     create table t_extraction_bla_intermediaire as select …;
+#     select i.*, d.x, d.y from t_extraction_bla_intermediaire i join donnees using(id);
+# (base_ext étant reconnue par oraParams).
+# 
+# Voire même, si une seule requête suffit de l'autre côté à extraire le jeu de données:
+#   #set IDS_À_EXTRAIRE `select id from t_ids_a_recupere`
+#   create temp table t_bla from base_ext as
+#     select i.*, d.x, d.y from donnees where ORACLE_IN(id, IDS_À_EXTRAIRE);
+# (par des #define dynamiques sur /create temp table [^ ]* from/ et ORACLE_IN() pour faire le découpage en lignes de moins de 1000 éléments et 4000 caractères)
+# 
+# create temp table 
+
+_ora2pg()
+{
+	echo "#prepro copy"
+	if [ -n "$crea" ]
+	then
+		cat <<TERMINE
+create$temp table $table
+(
+TERMINE
+		sed -E < $T.ctl \
+			-e '1,/^\(/d' \
+			-e '/^\)/,$d' \
+			-e 's/^[^"]*"/  /' \
+			-e 's/".*(INTEGER|FLOAT|TIMESTAMP|TIMESTAMPTZ|DATE).*[^,](,*)$/ \1\2/' \
+			-e 's/".*[^,](,*)$/ text\1/'
+		echo ");"
+	fi
+	sed < $T.csv \
+		-e "1{
+s/$sep/,/g
+s/$/) delimiter '$sep' from stdin/
+s/^/#copy $table (/
+a\\
+\$ora2pg\$
+}" \
+		-e '$a\
+$ora2pg$;
+'
 }
 
 #- Quelle Table ----------------------------------------------------------------
