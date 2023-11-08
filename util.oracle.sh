@@ -77,6 +77,8 @@ miamParam()
 	params="$*"
 }
 
+#- Transferts ------------------------------------------------------------------
+
 oraCopy()
 {
 	local fc=/tmp/temp.oraCopy.$$ # Fichiers de Contrôle.
@@ -133,6 +135,8 @@ TERMINE
 			;;
 	esac
 }
+
+#- Quelle Table ----------------------------------------------------------------
 
 QT_N=4
 # Dans quelle table figure tel RowID?
