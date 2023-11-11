@@ -1,6 +1,8 @@
 # À inclure depuis votre .bashrc ou autre.
 # Pensez à définir $BDD_NOM, $BDD_QUI, $BDD_MDP.
 
+case "$_UTIL_ORACLE_SH_" in "")
+
 BDD_SQLEUR=sqloracle
 
 oraParams()
@@ -171,6 +173,7 @@ TERMINE
 	fi
 	
 	oraParams "$base" || return 1
+	command -v sqlm 2> /dev/null >&2 || [ ! -f "$SCRIPTS/../sqleur/sqlminus.sh" ] || . "$SCRIPTS/../sqleur/sqlminus.sh"
 	sqlm --null NULL -o "$T.csv" "$@"
 	
 	case "$BDD_SSH" in
@@ -456,3 +459,5 @@ _qttrie()
 	
 	$_qttrie_par -f $_qttrie_script | sort -nr | cut -d ' ' -f 2-
 }
+
+_UTIL_ORACLE_SH_=1 ;; esac
