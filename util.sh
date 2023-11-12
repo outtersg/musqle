@@ -20,6 +20,20 @@
 
 case "$_UTIL_MUSQLE_SH_" in "")
 
+#- Environnement ---------------------------------------------------------------
+
+configBdd()
+{
+	# Historiquement oraParams a été montée avant configBdd, on l'intègre donc.
+	if command -v oraParams > /dev/null 2>&1
+	then
+		oraParams "$@" && BDD_TYPE=oracle && return 0 || true
+	fi
+	
+	echo "# Configuration introuvable pour la base '$1'" >&2
+	return 1
+}
+
 #- Utilitaires -----------------------------------------------------------------
 
 miamParam()
