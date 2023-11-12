@@ -160,41 +160,15 @@ TERMINE
 
 # Exécute une extraction Oracle et la restitue sous forme d'un create temp table PostgreSQL, à passer dans un sql2csv.php
 # /!\ Repose sur l'inclusion de ../sqleur/sqlminus.sh
-ora2pg()
+oracle_extraire()
 {
-	local base sep=';' table crea temp params=table T=/tmp/temp.ora2pg.$$
+	# Le fichier de description demandé par l'appelant n'a pas le même format (SQL) que celui produit par sqlm (bidule Oracle).
+	# On écarte donc ce paramètre, et on traduira.
+	local descr="$1" ; shift
+	local T="`echo "$1" | sed -e 's/\.csv$//'`"
 	
-	while [ $# -gt 0 ]
-	do
-		case "$1" in
-			-b) base="$2" ; shift ;;
-			-s) sep="$2" ; shift ;;
-			-t|temp) crea=1 ; temp=" temporary" ;;
-			-c) crea=1 ;;
-			*) miamParam "$1" $params || break ;;
-		esac
-		shift
-	done
-	if [ -z "$*" -o -z "$table" ]
-	then
-		cat >&2 <<TERMINE
-# Utilisation: ora2pg [-s <sép>] [-b <base>] [temp|-t|-c] <table> <fichier .sql>|<requête sql>
-  -s <sép>
-  -b <base>
-  [temp|-t|-c] <table>
-    Nom de la table portant le résultat côté PostgreSQL.
-    Le mot-clé "temp" ou l'option -t la crée temporaire.
-    L'option "-c" la crée tout bonnement.
-    Sans option elle est juste alimentée, supputée déjà créée (mais alors ora2pg perd de son intérêt, de produire la requête de création).
-  <fichier .sql>|<requête sql>
-    Requête d'extraction à jouer côté Oracle, ou fichier contenant le SQL.
-TERMINE
-		return 1
-	fi
-	
-	oraParams "$base" || return 1
 	command -v sqlm 2> /dev/null >&2 || [ ! -f "$SCRIPTS/../sqleur/sqlminus.sh" ] || . "$SCRIPTS/../sqleur/sqlminus.sh"
-	sqlm --null NULL -o "$T.csv" "$@"
+	sqlm --null NULL -o "$@"
 	
 	case "$BDD_SSH" in
 		""|localhost) true ;;
@@ -204,9 +178,7 @@ TERMINE
 			;;
 	esac
 	
-	_ora2pg
-	
-	rm $T.*
+	_ora2pg > "$descr"
 }
 
 # À FAIRE: dans sqleur, un machin qui permette d'invoquer directement ora2pg, par exemple sous la forme:
@@ -226,32 +198,12 @@ TERMINE
 
 _ora2pg()
 {
-	echo "#prepro copy"
-	if [ -n "$crea" ]
-	then
-		cat <<TERMINE
-create$temp table $table
-(
-TERMINE
 		sed -E < $T.ctl \
 			-e '1,/^\(/d' \
 			-e '/^\)/,$d' \
 			-e 's/^[^"]*"/  /' \
 			-e 's/".*(INTEGER|FLOAT|TIMESTAMP|TIMESTAMPTZ|DATE).*[^,](,*)$/ \1\2/' \
 			-e 's/".*[^,](,*)$/ text\1/'
-		echo ");"
-	fi
-	sed < $T.csv \
-		-e "1{
-s/$sep/,/g
-s/$/) delimiter '$sep' from stdin/
-s/^/#copy $table (/
-a\\
-\$ora2pg\$
-}" \
-		-e '$a\
-$ora2pg$;
-'
 }
 
 #- Quelle Table ----------------------------------------------------------------
