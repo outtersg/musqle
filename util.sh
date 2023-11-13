@@ -90,7 +90,7 @@ sql2table()
 	if [ -z "$*" -o -z "$table" ]
 	then
 		cat >&2 <<TERMINE
-# Utilisation: sql2table [-s <sép>] [-b <base>] [temp|-t|-c] <tablea>[:<type>] <fichier .sql>|<requête sql>
+# Utilisation: sql2table [-s <sép>] [-b <base>] [temp|-t|-c] <tablea>[:<type>] <fichier .sql>|<requête sql>|-
   -s <sép>
   -b <base>
   [temp|-t|-c] <table>[:<type>]
@@ -99,8 +99,9 @@ sql2table()
     L'option "-c" la crée tout bonnement.
     Sans option elle est juste alimentée, supputée déjà créée (mais alors sql2table perd de son intérêt, de produire la requête de création).
     Si <type> est précisée, un format optimisé pour ce type de base pourra être généré.
-  <fichier .sql>|<requête sql>
+  <fichier .sql>|<requête sql>|-
     Requête d'extraction à jouer côté Oracle, ou fichier contenant le SQL.
+    - désigne l'entrée standard.
 TERMINE
 		return 1
 	fi
