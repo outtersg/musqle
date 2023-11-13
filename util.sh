@@ -157,6 +157,7 @@ csvVersSql()
 	return 1
 }
 
+pgsql_csvVersSql() { sqleurcopy_csvVersSql "$@" ; }
 sqleurcopy_csvVersSql()
 {
 	local sep=';'
