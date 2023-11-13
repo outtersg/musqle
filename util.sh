@@ -112,7 +112,7 @@ TERMINE
 	case "$BDD_TYPE" in
 		"") echo "# La config de base n'a pas typé '$base'." >&2 ; return 1 ;;
 	esac
-	${BDD_TYPE}_extraire "$T.descr" "$T.csv" "$@"
+	${BDD_TYPE}_extraire "$T.descr" "$T.csv" "$@" >&2 # _extraire étant censé pondre vers notre CSV, tout ce qui n'y tombe pas est probablement de la pollution qui va retomber sur notre pauvre appelant (croyant qu'il s'agit d'une ligne CSV à interpréter).
 	
 	# Import
 	
