@@ -162,13 +162,23 @@ TERMINE
 # /!\ Repose sur l'inclusion de ../sqleur/sqlminus.sh
 oracle_extraire()
 {
+	local sep=';'
+	while [ $# -gt 0 ]
+	do
+		case "$1" in
+			-s) sep="$2" ; shift ;;
+			*) break ;;
+		esac
+		shift
+	done
+	
 	# Le fichier de description demandé par l'appelant n'a pas le même format (SQL) que celui produit par sqlm (bidule Oracle).
 	# On écarte donc ce paramètre, et on traduira.
 	local descr="$1" ; shift
 	local T="`echo "$1" | sed -e 's/\.csv$//'`"
 	
 	command -v sqlm 2> /dev/null >&2 || [ ! -f "$SCRIPTS/../sqleur/sqlminus.sh" ] || . "$SCRIPTS/../sqleur/sqlminus.sh"
-	sqlm --null NULL -o "$@"
+	sqlm --null NULL -s "$sep" -o "$@"
 	
 	case "$BDD_SSH" in
 		""|localhost) true ;;
