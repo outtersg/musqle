@@ -149,11 +149,11 @@ TERMINE
 	case "$BDD_SSH" in
 		""|localhost)
 			[ -z "$BDD_ENV" ] || eval "$BDD_ENV"
-			sqlldr userid="$BDD_IM@$BDD_NOM" control=$fc.ctl data="$csv"
+			sqlldr userid="$BDD_IM@$BDD_NOM" control=$fc.ctl data="$csv" < /dev/null
 			;;
 		*)
 			scp -C $fc.ctl "$csv" $BDD_SSH:/tmp/
-			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=$BDD_IM@$BDD_NOM control=$fc.ctl data=/tmp/`basename "$csv"` && rm -f $fc.ctl $fc.bad $fc.log $csvd"
+			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=$BDD_IM@$BDD_NOM control=$fc.ctl data=/tmp/`basename "$csv"` && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
 			;;
 	esac
 }
