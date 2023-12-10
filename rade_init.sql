@@ -87,6 +87,13 @@ create RADE_TEMP_TEMP table RADE_TEMP
 (
 	q timestamp default MAINTENANT(),
 	indicateur T_TEXT(255),
+#if 0
+	-- Si la table temporaire est évanescente, on sait qu'elle ne contiendra que du pondu par le script en cours d'exécution.
+	-- Par contre si elle est partagée, il nous faut un moyen de ne pas nous marcher sur les pieds.
+#endif
+#if !RADE_TEMP_TEMP
+	producteur T_TEXT(255),
+#endif
 	id T_TEXT(255),
 	commentaire T_TEXT,
 	fait T_TEXT(31)
