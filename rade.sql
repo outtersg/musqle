@@ -84,6 +84,10 @@
 
 #if RADE_TEMP_TEMP
 
+#define MIENS 1=1
+#define AND_MIENS
+#define MIENS_AND
+#define WHERE_MIENS
 #if not defined(RADE_TEMP_EXISTE)
 #if :driver = "pgsql"
 #set RADE_TEMP_EXISTE `select count(*) from pg_tables where tablename = 'RADE_TEMP'`
@@ -92,6 +96,13 @@
 #set RADE_TEMP_EXISTE 1
 #endif
 #endif
+
+#else
+
+#define MIENS producteur = ':SCRIPT_NAME'
+#define AND_MIENS and MIENS
+#define MIENS_AND MIENS and
+#define WHERE_MIENS where MIENS
 
 #endif
 
@@ -107,6 +118,42 @@ $$
 #if RADE_TEMP_TEMP
 #include rade_init.sql
 #endif
+
+#if RADE_TEMP_TEMP
+#define RADE_T_PRODUCTEUR ':SCRIPT_NAME'
+#else
+#define RADE_T_PRODUCTEUR t.producteur
+#endif
+#define RADE_REF_POUR_T RADE_REF r where r.indicateur = t.indicateur and r.producteur = RADE_T_PRODUCTEUR
+#define T_POUR_D where t.id = d.id and t.indicateur = cast(d.indicateur_id as T_TEXT(255))
+#define RADE_TEMP_POUR_D RADE_TEMP t T_POUR_D
+
+insert into RADE_REF (indicateur, producteur)
+	select distinct indicateur, RADE_T_PRODUCTEUR
+	from RADE_TEMP t
+	where MIENS_AND not exists (select 1 from RADE_REF_POUR_T)
+;
+update RADE_TEMP t set indicateur = (select max(id) from RADE_REF_POUR_T) WHERE_MIENS;
+
+update RADE_DETAIL d
+set
+	a = MAINTENANT()
+#if 0
+	-- À FAIRE? Actualiser le commentaire? Par concaténation, uniquement si vide?
+#endif
+where exists (select 1 from RADE_TEMP_POUR_D)
+#if 0
+-- Si notre ID a été touché plusieurs fois, on n'élargit que sa dernière occurrence.
+-- À FAIRE: tenir compte aussi du delai_retention: une entrée historique (a < MAINTENANT() - delai_retention) ne doit pas être prolongée, mais une nouvelle doit être créée.
+#endif
+and not exists (select 1 from RADE_DETAIL recent where recent.id = d.id and recent.indicateur_id = d.indicateur_id and recent.de > d.de)
+;
+delete from RADE_TEMP t where MIENS and exists (select 1 from RADE_DETAIL d T_POUR_D);
+
+insert into RADE_DETAIL (indicateur_id, id, de, a, commentaire)
+	select cast(t.indicateur as integer), t.id, t.q, MAINTENANT(), t.commentaire
+	from RADE_TEMP t WHERE_MIENS;
+delete from RADE_TEMP WHERE_MIENS;
 
 #if defined(RADE_INSTALLER)
 	end;
