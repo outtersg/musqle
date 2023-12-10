@@ -91,6 +91,8 @@ create RADE_TEMP_TEMP table RADE_TEMP
 	commentaire T_TEXT,
 	fait T_TEXT(31)
 );
+create index RADE_TEMP_id_x on RADE_TEMP(id);
+create index RADE_TEMP_q_x on RADE_TEMP(q);
 create index RADE_TEMP_fait_x on RADE_TEMP(fait);
 #define RADE_DEJA_TEMP 1
 #endif
