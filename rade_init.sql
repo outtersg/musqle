@@ -86,8 +86,10 @@ create RADE_TEMP_TEMP table RADE_TEMP
 	q timestamp default MAINTENANT(),
 	indicateur T_TEXT(255),
 	id T_TEXT(255),
-	commentaire T_TEXT
+	commentaire T_TEXT,
+	fait T_TEXT(31)
 );
+create index RADE_TEMP_fait_x on RADE_TEMP(fait);
 #define RADE_DEJA_TEMP 1
 #endif
 
