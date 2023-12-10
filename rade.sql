@@ -66,6 +66,13 @@
 #define RADE_FONCTION rade
 #endif
 #endif
+#if not defined(RADE_DEJA)
+#if defined(RADE_INSTALLER)
+#define RADE_DEJA 0
+#else
+#define RADE_DEJA 1
+#endif
+#endif
 
 #include rade_init.sql
 
@@ -75,11 +82,19 @@
 -- À la première invocation (table temp inexistante), on est sur de la préparation du terrain.
 -- Les fois suivantes, si la table temporaire contient des entrées, l'invocation du fichier déclenche leur affichage puis déversement vers la table persisteuse.
 
+#if RADE_TEMP_TEMP
+
 #if not defined(RADE_TEMP_EXISTE)
+#if :driver = "pgsql"
 #set RADE_TEMP_EXISTE `select count(*) from pg_tables where tablename = 'RADE_TEMP'`
+#else
+-- Si pas moyen de détecter, on suppose que tout est en place.
+#set RADE_TEMP_EXISTE 1
+#endif
 #endif
 
-#if defined(RADE_INSTALLER) or !RADE_TEMP_EXISTE
+#endif
+
 #if defined(RADE_INSTALLER)
 create or replace function RADE_FONCTION()
 	returns void
@@ -96,5 +111,4 @@ $$
 #if defined(RADE_INSTALLER)
 	end;
 $$;
-#endif
 #endif

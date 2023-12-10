@@ -31,6 +31,15 @@
 #set RADE_DEJA 0
 #endif
 #endif
+#if RADE_TEMP_TEMP
+#if !defined(RADE_DEJA_TEMP)
+#if :driver = "pgsql"
+#set RADE_DEJA_TEMP `select count(*) from pg_tables where tablename = 'RADE_TEMP'`
+#else
+#set RADE_DEJA_TEMP 0
+#endif
+#endif
+#endif
 
 #if !RADE_DEJA
 
@@ -82,6 +91,4 @@ create RADE_TEMP_TEMP table RADE_TEMP
 #define RADE_DEJA_TEMP 1
 #endif
 
-#if !defined(RADE_DEJA)
 #define RADE_DEJA 1
-#endif
