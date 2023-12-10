@@ -62,12 +62,14 @@ AUTOPRIMARY_INIT(RADE_REF, id)
 
 create table RADE_DETAIL
 (
-	id T_TEXT(255) primary key,
+	id T_TEXT(255),
 	indicateur_id integer not null references RADE_REF(id),
 	de timestamp not null,
 	a timestamp,
 	commentaire T_TEXT
 );
+create index RADE_DETAIL_id_x on RADE_DETAIL(id);
+-- Pas de clé primaire, car un identifiant peut être cité pour la même erreur sur deux périodes disjointes.
 
 create table RADE_STATS
 (
