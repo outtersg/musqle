@@ -1,3 +1,4 @@
+#if 0
 -- Copyright (c) 2023 Guillaume Outters
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +19,10 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
+-- N.B.: ce fichier étant destiné à être inclus, l'ensemble de ses commentaires est encadré de #if 0 pour éviter de polluer l'incluant de nos notes.
+
 -- /!\ Fichier technique, inclus par rade.sql (qui contient toutes les définitions nécessaires). Ne pas inclure directement.
+#endif
 
 #if !defined(RADE_DEJA)
 #if :driver = "pgsql"

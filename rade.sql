@@ -1,3 +1,4 @@
+#if 0
 -- Copyright (c) 2023 Guillaume Outters
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,6 +19,8 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
 
+-- N.B.: ce fichier étant destiné à être inclus, l'ensemble de ses commentaires est encadré de #if 0 pour éviter de polluer l'incluant de nos notes.
+
 -- Récap d'Aberrations Détectées et Entreposage
 -- Remontée d'Aberrations de Données et Entreposage
 
@@ -29,6 +32,7 @@
 -- - une première fois avant traitement, pour initialiser l'environnement
 -- - puis à chaque fois que l'on souhaitera engranger les données recueillies
 -- - dont en tout état de cause une dernière fois à la fin du script appelant
+#endif
 
 #if not defined(RADE_REF)
 #define RADE_REF rade_referentiel
