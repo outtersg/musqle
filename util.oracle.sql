@@ -36,4 +36,4 @@
 	begin \
 		_drop_table_if_exists('nom_table',); \
 	end;
-#define /drop table if exists ([^ ]*)/i drop_table_if_exists(\1)
+#define /drop table if exists ([^ ;]*)/i drop_table_if_exists(\1)
