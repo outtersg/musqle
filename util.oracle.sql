@@ -37,3 +37,20 @@
 		_drop_table_if_exists('nom_table',); \
 	end;
 #define /drop table if exists ([^ ;]*)/i drop_table_if_exists(\1)
+#if 0
+
+-- Idem pour les séquences.
+#endif
+#define _drop_sequence_if_exists(nom_sequence, PENDANT) <<
+$$
+	for rec in (select sequence_name from all_sequences where lower(sequence_name) = lower(nom_sequence))
+	loop
+		execute immediate 'drop sequence '||rec.sequence_name;
+		PENDANT
+	end loop
+$$;
+#define drop_sequence_if_exists(nom_sequence) \
+	begin \
+		_drop_sequence_if_exists('nom_sequence',); \
+	end;
+#define /drop sequence if exists ([^ ;]*)/i drop_sequence_if_exists(\1)
