@@ -4,6 +4,29 @@
 #define RADE_STATS radetest_stats
 #define RADE_REF radetest_ref
 
+#if :pilote = "oracle"
+#include ../util.oracle.sql
+#endif
+
+#define MENAGE <<
+$$
+drop table if exists radetest_temp;
+drop table if exists radetest_detail;
+drop table if exists radetest_stats;
+drop table if exists radetest_ref;
+$$;
+
+#if :pilote = "oracle"
+#define MENAGE <<
+$$
+MENAGE
+drop sequence if exists radetest_ref_id_seq;
+drop sequence if exists radetest_stats_id_seq;
+$$;
+#endif
+
+MENAGE
+
 #define RADE_INSTALLER
 #include ../rade.sql
 #undef RADE_INSTALLER
@@ -31,11 +54,4 @@ update radetest_temp set producteur = ':SCRIPT_NAME' where producteur is null;
 
 select * from radetest_detail order by de, a;
 
-drop table radetest_temp;
-drop table radetest_detail;
-drop table radetest_stats;
-drop table radetest_ref;
-#if :pilote = "oracle"
-drop sequence radetest_ref_id_seq;
-drop sequence radetest_stats_id_seq;
-#endif
+MENAGE
