@@ -60,6 +60,12 @@
 #define RADE_TEMP_TEMP temporary
 #endif
 #endif
+-- RADE_DEDOU: pour n'entrer chaque identifiant qu'une seule fois par passe. Par défaut à 1.
+#if defined(RADE_DEDOU)
+#define _RADE_DEDOU RADE_DEDOU
+#else
+#define _RADE_DEDOU 1
+#endif
 
 #if defined(RADE_INSTALLER)
 #if not defined(RADE_FONCTION)
@@ -150,9 +156,19 @@ and not exists (select 1 from RADE_DETAIL recent where recent.id = d.id and rece
 ;
 delete from RADE_TEMP t where MIENS and exists (select 1 from RADE_DETAIL d T_POUR_D);
 
-insert into RADE_DETAIL (indicateur_id, id, de, a, commentaire)
-	select cast(t.indicateur as integer), t.id, t.q, MAINTENANT(), t.commentaire
-	from RADE_TEMP t WHERE_MIENS;
+insert into RADE_DETAIL (indicateur_id, id, a, de, commentaire)
+	select
+		cast(t.indicateur as integer), t.id, MAINTENANT(),
+#if _RADE_DEDOU
+		min(t.q), max(t.commentaire)
+#else
+		t.q, t.commentaire
+#endif
+	from RADE_TEMP t WHERE_MIENS
+#if _RADE_DEDOU
+	group by t.indicateur, t.id
+#endif
+;
 delete from RADE_TEMP WHERE_MIENS;
 
 #if defined(RADE_INSTALLER)
