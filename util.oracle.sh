@@ -123,6 +123,19 @@ oraCopy()
 	#     oraCopy /tmp/donnees.brut -b <base> -s '\037' -rs '\036\n' ma_table_dest id "champ_long char(999999999)" champ_texte
 	# (évacuation de l'autre piste envisagée: l'optionally enclosed by '"' gère la partie double-guillemet de la spéc CSV ("<balise attr=""val""/>"), mais pas les retours à la ligne entre guillemets, car sqlldr lit ligne à ligne et finit en "second sparateur de fin manquant".
 	
+	# NOTE: oraCopy et date
+	# Le format de date peut être accolé à la colonne sous la forme:
+	#   oraCopy … ma_table colonne1 colonne2 "colonne_date date 'YYYY-MM-DD HH24:MI:SS'"
+	
+	# NOTE: explosion d'index
+	# /!\ Veillez à respecter toutes les contraintes dans les données importées.
+	# Pour des raisons de perfs, oraCopy exploite le mode direct=true, au grand détriment de l'intégrité.
+	# Mais ça nous donne un import vraiment à poil: en particulier il autorise la création d'enregistrements de même clé primaire que des existants.
+	# Ce n'est qu'ensuite à l'exécution qu'on se tapera des "ORA-01502: l'index '…' ou sa partition est inutilisable"; seul le truncate permettra de s'en tirer.
+	# Cf. https://stackoverflow.com/a/37947714
+	
+	# À FAIRE?: une option sans direct=true?
+	
 	local fc=/tmp/temp.oraCopy.$$ # Fichiers de Contrôle.
 	local params="csv table" csv base table sep=";" rs= optionsSqlldr="log=\"$fc.log\", direct=true"
 	
