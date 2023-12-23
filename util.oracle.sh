@@ -111,7 +111,7 @@ oraCopy()
 		case "$1" in
 			-1) optionsSqlldr="$optionsSqlldr, skip=1" ;;
 			-b) base="$2" ; shift ;;
-			-s) sep="$2" ; shift ;;
+			-s) sep="$2" ; case "$sep" in \\[t]|\\[0-9][0-9][0-9]) sep="`printf "$sep"`" ;; esac ; shift ;;
 			*)
 				case "$params" in "") break ;; esac # Plus de param à renseigner? C'est qu'on arrive à la première colonne.
 				miamParam "$1" $params
