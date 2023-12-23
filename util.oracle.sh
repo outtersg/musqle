@@ -103,8 +103,28 @@ miamParam()
 
 oraCopy()
 {
+	# NOTE: oraCopy et champs multi-lignes
+	# Pour pousser du multi-lignes vers un CLOB, on peut utiliser un séparateur d'enregistrements augmenté, par exemple un caractère de contrôle en fin de ligne.
+	# Mode opératoire:
+	# - à l'extraction:
+	#   - terminer par un champ texte *non nul* en lui concaténant un caractère spécial. Ce peut être le champ à retours ou un autre.
+	#   - ne pas inclure les en-têtes dans la sortie, car eux ne pourraient se terminer par le caractère spécial.
+	#   - bien nommer les colonnes composites dont celle par concaténation du séparateur (sql2csv.php pouvant décider de fusionner les colonnes de même nom, donc si toutes s'appellent ?column?, le CSV n'aura qu'une seule colonne pour toutes et donc pas assez par rapport aux colonnes à importer).
+	#   Ce qui donne:
+	#     #sortie /tmp/donnees.brut
+	#     #format sans-en-tête delim \037
+	#     select id, champ_long, coalesce(champ_texte, '')||E'\036' champ_texte from ma_table_source;
+	# - à l'import:
+	#   - exploiter la possibilité de mentionner les séparateurs sous forme octale
+	#   - le séparateur d'enregistrements inclut le caractère de contrôle *et* le retour le retour à la ligne final: \036\n
+	#   - pour du CLOB, bien penser que sqlldr utilise par défaut un tampon étriqué pour les chaînes de caractères => y aller d'un char(<tailleMax>) bien ample
+	#     Cf. https://stackoverflow.com/questions/10991229/adding-clob-column-to-oracle-database-using-sqlloader
+	#   Ce qui donne:
+	#     oraCopy /tmp/donnees.brut -b <base> -s '\037' -rs '\036\n' ma_table_dest id "champ_long char(999999999)" champ_texte
+	# (évacuation de l'autre piste envisagée: l'optionally enclosed by '"' gère la partie double-guillemet de la spéc CSV ("<balise attr=""val""/>"), mais pas les retours à la ligne entre guillemets, car sqlldr lit ligne à ligne et finit en "second sparateur de fin manquant".
+	
 	local fc=/tmp/temp.oraCopy.$$ # Fichiers de Contrôle.
-	local params="csv table" csv base table sep=";" optionsSqlldr="log=\"$fc.log\", direct=true"
+	local params="csv table" csv base table sep=";" rs= optionsSqlldr="log=\"$fc.log\", direct=true"
 	
 	while [ $# -gt 0 ]
 	do
@@ -112,6 +132,7 @@ oraCopy()
 			-1) optionsSqlldr="$optionsSqlldr, skip=1" ;;
 			-b) base="$2" ; shift ;;
 			-s) sep="$2" ; case "$sep" in \\[t]|\\[0-9][0-9][0-9]) sep="`printf "$sep"`" ;; esac ; shift ;;
+			-rs) rs="$2" ; shift ;;
 			*)
 				case "$params" in "") break ;; esac # Plus de param à renseigner? C'est qu'on arrive à la première colonne.
 				miamParam "$1" $params
@@ -121,7 +142,7 @@ oraCopy()
 	done
 	if [ -z "$*" -o ! -f "$csv" ]
 	then
-		echo "# Utilisation: oraCopy [-1] [-s <sép>] <csv> [-b <base>] <table> <colonne>+" >&2
+		echo "# Utilisation: oraCopy [-1] [-s <sép>] [-rs <fin de ligne>] <csv> [-b <base>] <table> <colonne>+" >&2
 		return 1
 	fi
 	
@@ -131,9 +152,13 @@ oraCopy()
 	
 	{
 		# À FAIRE: peut-on ne pas préciser pas ($cols)?
+		# Mode "stream" pour avoir des entrées contenant du retour à la ligne:
+		#   https://forums.oracle.com/ords/apexds/post/how-can-we-load-data-into-clob-datatype-column-using-sql-lo-1538
+		case "$rs" in ?*) rs=" \"str X'`printf "$rs" | od -t x1 | sed -e 's/^[^ ]* *//' -e 's/ //g'`'\"" ;; esac
 		cat <<TERMINE
 options ($optionsSqlldr)
 load data
+infile '/tmp/`basename "$csv"`'$rs
 badfile "$fc.bad"
 append into table $table
 fields terminated by '$sep'
@@ -153,7 +178,7 @@ TERMINE
 			;;
 		*)
 			scp -C $fc.ctl "$csv" $BDD_SSH:/tmp/
-			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=$BDD_IM@$BDD_NOM control=$fc.ctl data=/tmp/`basename "$csv"` && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
+			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=$BDD_IM@$BDD_NOM control=$fc.ctl && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
 			;;
 	esac
 }
