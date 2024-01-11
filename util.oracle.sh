@@ -171,6 +171,7 @@ oraCopy()
 		cat <<TERMINE
 options ($optionsSqlldr)
 load data
+characterset UTF8
 infile '/tmp/`basename "$csv"`'$rs
 badfile "$fc.bad"
 append into table $table
