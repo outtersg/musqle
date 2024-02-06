@@ -31,6 +31,7 @@ oraParams()
 	if [ -z "$BDD_IM" -a -n "$BDD_QUI" -a -n "$BDD_MDP" ] ; then BDD_IM="$BDD_QUI/$BDD_MDP" ; fi
 	[ -n "$BDD_HOTE" ] || BDD_HOTE=localhost
 	[ -n "$BDD_PORT" ] || BDD_PORT=1521
+	case "$BDD_TYPE" in ora*|oci*) true ;; *) BDD_TYPE=oracle ;; esac
 	
 	if [ -z "$BDD_IM" -o -z "$BDD_NOM" ]
 	then
