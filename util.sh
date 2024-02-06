@@ -148,9 +148,7 @@ creaVersSql()
 	echo ");"
 }
 
-# Convertit un ensemble <fichier de description des colonnes> <CSV> <table> en instructions SQL.
-# Repose sur les variables:
-# - $table Table à alimenter.
+# Convertit un ensemble <table> <fichier de description des colonnes> <CSV> en instructions SQL.
 csvVersSql()
 {
 	local BDD_TYPE="$BDD_TYPE"
