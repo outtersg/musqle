@@ -36,6 +36,26 @@ configBdd()
 	return 1
 }
 
+denicherMUSQLE()
+{
+	_trouver()
+	{
+		unset IFS
+		local f quoi="$1" ; shift
+		for f in "$@"
+		do
+			case "$f" in */$quoi) MUSQLE="`dirname "$f"`" ; return ;; esac
+		done
+	}
+	
+	# À FAIRE: exploiter $BASH_SOURCE quand on est lancé par lui.
+	case "$LOMBRICPATH:" in
+		*/util.oracle.sh:*) IFS=: ; _trouver util.oracle.sh $LOMBRICPATH ;;
+	esac
+}
+
+denicherMUSQLE
+
 #- Utilitaires -----------------------------------------------------------------
 
 miamParam()
