@@ -135,12 +135,16 @@ TERMINE
 
 creaVersSql()
 {
-	local temp
+	local temp typeCible
 	case "$1" in -t) shift ; temp=temporary ;; esac
 	local table="$1" descr="$2"
+	case "$table" in *:*) IFS=: ; paire table typeCible $table ;; esac
+	local filtre=_creaVersSql_$typeCible
+	commande $filtre || filtre=cat
+	
 	echo "create $temp table $table"
 	echo "("
-	sed -e 's/$/,/' -e 's/,,$/,/' -e `wc -l < "$descr"`'s/,$//' < "$descr"
+	sed -e 's/$/,/' -e 's/,,$/,/' -e `wc -l < "$descr"`'s/,$//' < "$descr" | $filtre
 	echo ");"
 }
 
