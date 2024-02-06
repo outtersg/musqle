@@ -124,13 +124,7 @@ TERMINE
 		*:*) IFS=: ; paire table typeCible $table ;;
 	esac
 	[ -z "$crea" ] || creaVersSql $temp "$table" "$T.descr"
-	for csvVersSql in "${typeCible}_" ""
-	do
-		csvVersSql="${csvVersSql}csvVersSql"
-		commande $csvVersSql && break
-		break
-	done
-	$csvVersSql -s "$sep" "$table" "$T.descr" "$T.csv"
+	csvVersSql -s "$sep" "$table" "$T.descr" "$T.csv"
 	
 	# À FAIRE: implémenter aussi l'intégration vers une nouvelle base, par exemple avec une option -d <base destination>,
 	#          qui permettrait d'avoir un outil tout-en-un pouvant faire office d'ETL.
@@ -155,6 +149,20 @@ creaVersSql()
 # - $table Table à alimenter.
 csvVersSql()
 {
+	local BDD_TYPE="$BDD_TYPE"
+	case "$typeCible" in ?*) BDD_TYPE="$typeCible" ;; esac
+	
+	# Recherche d'une implémentation spécifique.
+	
+	local specifique="${BDD_TYPE}_csvVersSql"
+	if commande $specifique
+	then
+		$specifique "$@" || return $?
+		return
+	fi
+	
+	# Implémentation générique.
+	
 	# À FAIRE: un gros bidule à coup d'insert.
 	echo "# csvVersSql() n'a pas d'implémentation générique. Désolé." >&2
 	return 1
