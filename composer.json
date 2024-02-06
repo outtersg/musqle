@@ -1,10 +1,10 @@
 {
 	"name": "gui/musqle",
 	"description": "Mes Utilitaires SQL Éclectiques",
-	"version": "2.2.x-dev",
+	"version": "2.3.x-dev",
 	"license": "MIT",
 	"suggest":
 	{
-		"gui/sqleur": "préprocesseur de SQL"
+		"gui/sqleur": "préprocesseur de SQL (>= 1.11 pour util.oracle.sh)"
 	}
 }
