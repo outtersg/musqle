@@ -100,6 +100,13 @@ miamParam()
 	params="$*"
 }
 
+#- Tables ----------------------------------------------------------------------
+
+_creaVersSql_oracle()
+{
+	sed -e 's/varchar(/varchar2(/gi'
+}
+
 #- Transferts ------------------------------------------------------------------
 
 oraCopy()
@@ -196,6 +203,22 @@ TERMINE
 			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=$BDD_IM@$BDD_NOM control=$fc.ctl && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
 			;;
 	esac
+}
+
+oracle_csvVersTable()
+{
+	local sep=\;
+	while [ $# -gt 0 ]
+	do
+		case "$1" in
+			-s) sep="$2" ; shift ;;
+			*) break ;;
+		esac
+		shift
+	done
+	local table="$1" descr="$2" csv="$3"
+	
+	oraCopy -s "$sep" -b "$BDD" "$csv" "$table" `awk '{print$1}' < "$descr"`
 }
 
 # Exécute une extraction Oracle et la restitue sous forme d'un create temp table PostgreSQL, à passer dans un sql2csv.php
