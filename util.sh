@@ -24,6 +24,8 @@ case "$_UTIL_MUSQLE_SH_" in "")
 
 configBdd()
 {
+	BDD="$1"
+	
 	# Historiquement oraParams a été montée avant configBdd, on l'intègre donc.
 	if command -v oraParams > /dev/null 2>&1
 	then
