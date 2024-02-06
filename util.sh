@@ -153,6 +153,41 @@ TERMINE
 	rm $T.*
 }
 
+csv2table()
+{
+	local sep=';' crea=0
+	while [ $# -gt 0 ]
+	do
+		case "$1" in
+			-s) sep="$2" ; shift ;;
+			-b) configBdd "$2" ; shift ;;
+			--drop) crea=-1 ;;
+			-c) crea=1 ;;
+			*) break;
+		esac
+		shift
+	done
+	
+	local table="$1" descr="$2" csv="$3"
+	
+	# Création.
+	
+	case "$crea" in 1|-1)
+		{
+			# Il est demandé une destruction préalable de la table destination.
+			case "$crea" in -1)
+				echo "drop table if exists $table;" ;;
+			esac
+			creaVersSql "$table:$BDD_TYPE" "$descr"
+		} | sql$BDD_TYPE
+		;;
+	esac
+	
+	# Remplissage.
+	
+	csvVersTable -s "$sep" "$table" "$descr" "$csv"
+}
+
 creaVersSql()
 {
 	local temp typeCible
@@ -208,6 +243,26 @@ a\\
 		-e '$a\
 $ora2pg$;
 '
+}
+
+# Pousse un ensemble <table> <fichier de description des colonnes> <CSV> vers une table.
+csvVersTable()
+{
+	local BDD_TYPE="$BDD_TYPE"
+	case "$typeCible" in ?*) BDD_TYPE="$typeCible" ;; esac
+	
+	# Recherche d'une implémentation spécifique.
+	
+	local specifique="${BDD_TYPE}_csvVersTable"
+	if commande $specifique
+	then
+		$specifique "$@" || return $?
+		return
+	fi
+	
+	# Implémentation générique.
+	
+	csvVersSql "$@" | sql$BDD_TYPE
 }
 
 _UTIL_MUSQLE_SH_=1 ;; esac
