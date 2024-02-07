@@ -45,7 +45,9 @@ oraParams()
 _oraParams_chaine()
 {
 	case "$1" in
-		complexe) BDD_CHAINE="$BDD_IM@`_oraParams_chaineMulti "$BDD_HOTE $BDD_HOTE2 $BDD_HOTE3 $BDD_HOTE4" "$BDD_PORT" "$BDD_NOM"`" ;;
+		complexe)
+			BDD_CHAINE="$BDD_IM@`_oraParams_chaineMulti "$BDD_HOTE $BDD_HOTE2 $BDD_HOTE3 $BDD_HOTE4" "$BDD_PORT" "$BDD_NOM"`"
+			;;
 		*) BDD_CHAINE="$BDD_IM@$BDD_HOTE:$BDD_PORT:$BDD_NOM" ;;
 	esac
 }
