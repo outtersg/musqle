@@ -176,7 +176,7 @@ oraCopy()
 	
 	local cols="`IFS=, ; echo "$*"`"
 	
-	oraParams "$base" || return 1
+	oraParams "$base" complexe || return 1
 	
 	{
 		# À FAIRE: peut-on ne pas préciser pas ($cols)?
@@ -196,18 +196,18 @@ trailing nullcols
 TERMINE
 	} > $fc.ctl
 	
-	# /!\ $BDD_NOM doit avoir été déclaré dans le tnsnames.ora,
-	#     car (en SSH vers une 11.2 en tout cas) le userid ne peut être passé sous sa forme longue).
-	#local chaineCo="$BDD_IM@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=$BDD_HOTE)(PORT=$BDD_PORT))(CONNECT_DATA=(SID=$BDD_NOM)))"
+	# NOTE: guillemetage de $BDD_CHAINE
+	# Voir https://stackoverflow.com/questions/7409503/is-it-possible-for-oracle-sqlldr-to-accept-a-tns-entry-as-an-instance-qualifier
+	# L'autre option, moins maniable, est de faire du userid="$BDD_IM@$BDD_NOM", mais il faut avoir déclaré $BDD_NOM dans le tnsnames.ora et va-t'en le retrouver et le modifier, celui-là.
 	
 	case "$BDD_SSH" in
 		""|localhost)
 			[ -z "$BDD_ENV" ] || eval "$BDD_ENV"
-			sqlldr userid="$BDD_IM@$BDD_NOM" control=$fc.ctl data="$csv" < /dev/null
+			sqlldr userid="\"$BDD_CHAINE\"" control=$fc.ctl data="$csv" < /dev/null
 			;;
 		*)
 			scp -C $fc.ctl "$csv" $BDD_SSH:/tmp/
-			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=$BDD_IM@$BDD_NOM control=$fc.ctl && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
+			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=\"\\\"$BDD_CHAINE\\\"\" control=$fc.ctl && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
 			;;
 	esac
 }
