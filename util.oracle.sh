@@ -282,7 +282,7 @@ _ora2pg()
 			-e '1,/^\(/d' \
 			-e '/^\)/,$d' \
 			-e 's/^[^"]*"/  /' \
-			-e 's/".*(INTEGER|FLOAT|TIMESTAMP|TIMESTAMPTZ|DATE).*[^,](,*)$/ \1\2/' \
+			-e 's/"[^"]*(INTEGER|FLOAT|TIMESTAMP|TIMESTAMPTZ|DATE).*[^,](,*)$/ \1\2/' \
 			-e 's/".*[^,](,*)$/ text\1/'
 }
 
