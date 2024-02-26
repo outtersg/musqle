@@ -5,6 +5,6 @@
 	"license": "MIT",
 	"suggest":
 	{
-		"gui/sqleur": "préprocesseur de SQL (>= 1.11 pour util.oracle.sh)"
+		"gui/sqleur": "préprocesseur de SQL (>= 1.11 pour util.oracle.sh, >= 1.12.240226 pour rade)"
 	}
 }

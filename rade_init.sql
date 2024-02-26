@@ -41,6 +41,14 @@
 #endif
 #endif
 
+-- Chez PostgreSQL, l'index doit être dépréfixé (car propriété de la table et donc dans son schéma).
+-- Sous Oracle il doit être préfixé.
+#if :driver = 'pgsql'
+#set NOMI(x) replace(x, /.*\./, "")
+#else
+#set NOMI(x) x
+#endif
+
 #if !RADE_DEJA
 
 create table RADE_REF
@@ -68,7 +76,7 @@ create table RADE_DETAIL
 	a timestamp,
 	commentaire T_TEXT
 );
-create index RADE_DETAIL_id_x on RADE_DETAIL(id);
+create index NOMI(RADE_DETAIL_id_x) on RADE_DETAIL(id);
 -- Pas de clé primaire, car un identifiant peut être cité pour la même erreur sur deux périodes disjointes.
 
 create table RADE_STATS
@@ -98,9 +106,9 @@ create RADE_TEMP_TEMP table RADE_TEMP
 	commentaire T_TEXT,
 	fait T_TEXT(31)
 );
-create index RADE_TEMP_id_x on RADE_TEMP(id);
-create index RADE_TEMP_q_x on RADE_TEMP(q);
-create index RADE_TEMP_fait_x on RADE_TEMP(fait);
+create index NOMI(RADE_TEMP_id_x) on RADE_TEMP(id);
+create index NOMI(RADE_TEMP_q_x) on RADE_TEMP(q);
+create index NOMI(RADE_TEMP_fait_x) on RADE_TEMP(fait);
 #define RADE_DEJA_TEMP 1
 #endif
 
