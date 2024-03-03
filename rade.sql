@@ -135,8 +135,15 @@ $$
 #define RADE_TEMP_POUR_D RADE_TEMP t T_POUR_D
 
 -- À appeler depuis une table externe pour savoir si cle a déjà été détectée en tant qu'indic.
-#define RADE_NOUVEAU(cle, indic) \
-	not exists (select 1 from RADE_DETAIL h__ where h__.indicateur_id in (select r__.id from RADE_REF r__ where r__.producteur = ':SCRIPT_NAME' and r__.indicateur = indic) and h__.id = cle)
+#define RADE_NOUVEAU(cle, indic) <<
+$$
+	not exists
+	(
+		select 1 from RADE_DETAIL h__
+		where h__.id = cle
+		and h__.indicateur_id in (select r__.id from RADE_REF r__ where r__.producteur = ':SCRIPT_NAME' and r__.indicateur = indic)
+	)
+$$;
 
 insert into RADE_REF (indicateur, producteur)
 	select distinct indicateur, RADE_T_PRODUCTEUR
