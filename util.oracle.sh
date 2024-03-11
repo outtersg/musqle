@@ -153,6 +153,7 @@ oraCopy()
 	
 	local fc=/tmp/temp.oraCopy.$$ # Fichiers de Contrôle.
 	local params="csv table" csv base table sep=";" rs= optionsSqlldr="log=\"$fc.log\", direct=true"
+	local paramsSqlldr="control=$fc.ctl"
 	
 	while [ $# -gt 0 ]
 	do
@@ -203,11 +204,11 @@ TERMINE
 	case "$BDD_SSH" in
 		""|localhost)
 			[ -z "$BDD_ENV" ] || eval "$BDD_ENV"
-			sqlldr userid="\"$BDD_CHAINE\"" control=$fc.ctl data="$csv" < /dev/null
+			sqlldr userid="\"$BDD_CHAINE\"" $paramsSqlldr data="$csv" < /dev/null
 			;;
 		*)
 			scp -C $fc.ctl "$csv" $BDD_SSH:/tmp/
-			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=\"\\\"$BDD_CHAINE\\\"\" control=$fc.ctl && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
+			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=\"\\\"$BDD_CHAINE\\\"\" $paramsSqlldr && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
 			;;
 	esac
 }
