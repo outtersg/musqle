@@ -38,7 +38,7 @@
 		_drop_table_if_exists('nom_table',); \
 	end;
 #define /drop table if exists ([^ ;]*)/i drop_table_if_exists(\1)
-#if 0
+#if ___NOTE___
 
 -- Idem pour les séquences.
 #endif
