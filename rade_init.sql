@@ -109,6 +109,9 @@ create RADE_TEMP_TEMP table RADE_TEMP
 create index NOMI(RADE_TEMP_id_x) on RADE_TEMP(id);
 create index NOMI(RADE_TEMP_q_x) on RADE_TEMP(q);
 create index NOMI(RADE_TEMP_fait_x) on RADE_TEMP(fait);
+#if !RADE_TEMP_TEMP
+create index NOMI(RADE_TEMP_prod_x) on RADE_TEMP(producteur);
+#endif
 #define RADE_DEJA_TEMP 1
 #endif
 
