@@ -66,6 +66,11 @@
 #else
 #define _RADE_DEDOU 1
 #endif
+-- RADE_REMPL_COMM: si la table de travail veut immortaliser son œuvre, mais que l'ID sur lequel elle bosse a déjà été consigné, le commentaire de travail remplace-t-il celui enregistré, ou priorise-t-on l'original?
+-- À FAIRE: une agrégation, si RADE_REMPL_COMM est un séparateur plutôt qu'un 0 ou 1.
+#if not defined(RADE_REMPL_COMM)
+#define RADE_REMPL_COMM 1
+#endif
 
 #if defined(RADE_INSTALLER)
 #if not defined(RADE_FONCTION)
@@ -158,10 +163,19 @@ update RADE_TEMP t set indicateur = (select max(id) from RADE_REF_POUR_T) WHERE_
 
 update RADE_DETAIL d
 set
-	a = MAINTENANT()
-#if 0
-	-- À FAIRE? Actualiser le commentaire? Par concaténation, uniquement si vide?
+	a = MAINTENANT(),
+	(commentaire) =
+	(
+		select
+#if RADE_REMPL_COMM == 1
+			coalesce(max(t.commentaire), d.commentaire)
+#elif RADE_REMPL_COMM
+			NON PRIS EN CHARGE
+#else
+			coalesce(d.commentaire, max(t.commentaire))
 #endif
+		from RADE_TEMP_POUR_D
+	)
 where exists (select 1 from RADE_TEMP_POUR_D)
 #if 0
 -- Si notre ID a été touché plusieurs fois, on n'élargit que sa dernière occurrence.
