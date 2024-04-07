@@ -164,9 +164,10 @@ update RADE_TEMP t set indicateur = (select max(id) from RADE_REF_POUR_T) WHERE_
 update RADE_DETAIL d
 set
 	a = MAINTENANT(),
-	(commentaire) =
+	(statut, commentaire) =
 	(
 		select
+			coalesce(max(t.statut), d.statut),
 #if RADE_REMPL_COMM == 1
 			coalesce(max(t.commentaire), d.commentaire)
 #elif RADE_REMPL_COMM
@@ -185,13 +186,13 @@ and not exists (select 1 from RADE_DETAIL recent where recent.id = d.id and rece
 ;
 delete from RADE_TEMP t where MIENS and exists (select 1 from RADE_DETAIL d T_POUR_D);
 
-insert into RADE_DETAIL (indicateur_id, id, a, de, commentaire)
+insert into RADE_DETAIL (indicateur_id, id, a, de, commentaire, statut)
 	select
 		cast(t.indicateur as integer), t.id, MAINTENANT(),
 #if _RADE_DEDOU
-		min(t.q), max(t.commentaire)
+		min(t.q), max(t.commentaire), max(t.statut)
 #else
-		t.q, t.commentaire
+		t.q, t.commentaire, t.statut
 #endif
 	from RADE_TEMP t WHERE_MIENS
 #if _RADE_DEDOU

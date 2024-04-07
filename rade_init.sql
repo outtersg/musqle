@@ -74,7 +74,8 @@ create table RADE_DETAIL
 	indicateur_id integer not null references RADE_REF(id),
 	de timestamp not null,
 	a timestamp,
-	commentaire T_TEXT
+	commentaire T_TEXT,
+	statut T_TEXT(31)
 );
 create index NOMI(RADE_DETAIL_id_x) on RADE_DETAIL(id);
 -- Pas de clé primaire, car un identifiant peut être cité pour la même erreur sur deux périodes disjointes.
@@ -104,11 +105,20 @@ create RADE_TEMP_TEMP table RADE_TEMP
 #endif
 	id T_TEXT(255),
 	commentaire T_TEXT,
-	fait T_TEXT(31)
+	statut T_TEXT(31)
 );
 create index NOMI(RADE_TEMP_id_x) on RADE_TEMP(id);
 create index NOMI(RADE_TEMP_q_x) on RADE_TEMP(q);
-create index NOMI(RADE_TEMP_fait_x) on RADE_TEMP(fait);
+create index NOMI(RADE_TEMP_statut_x) on RADE_TEMP(statut);
+#if 0
+-- Pour migrer de façon transparente en statut les tables qui auraient été créées avec l'ancien champ "fait":
+alter table RADE_TEMP add statut T_TEXT(31);
+create index NOMI(RADE_TEMP_statut_x) on RADE_TEMP(statut);
+update RADE_TEMP set statut = fait where fait is not null;
+-- À la sauce Oracle:
+create trigger RADE_TEMP_fait_cm  before insert or update of fait on RADE_TEMP for each row when (new.fait is not null)
+begin :new.statut := :new.fait; end;
+#endif
 #if !RADE_TEMP_TEMP
 create index NOMI(RADE_TEMP_prod_x) on RADE_TEMP(producteur);
 #endif
