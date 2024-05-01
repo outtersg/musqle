@@ -85,19 +85,25 @@
 #endif
 #endif
 
+#define RADE_PRODUC_COL producteur
+#define RADE_PRODUC_VAL ':SCRIPT_NAME'
+#define RADE_PRODUC_MIEN RADE_PRODUC_COL = RADE_PRODUC_VAL
+
 #include rade_init.sql
 
 --------------------------------------------------------------------------------
 -- Exécution
+
+-- RADe Aller-Retour: pour retrouver un id dans la table de détail une fois qu'il y a été mis.
+#define RADE_DETAIL_WHERE(idext) \
+	RADE_DETAIL h__, RADE_REF r__ where idext = h__.id and h__.indicateur_id = r__.id and r__.RADE_PRODUC_MIEN
 
 -- À appeler depuis une table externe pour savoir si cle a déjà été détectée en tant qu'indic.
 #define RADE_NOUVEAU(cle, indic, CRITERE) <<
 $$
 	not exists
 	(
-		select 1 from RADE_DETAIL h__
-		where h__.id = cle and CRITERE
-		and h__.indicateur_id in (select r__.id from RADE_REF r__ where r__.producteur = ':SCRIPT_NAME' and r__.indicateur = indic)
+		select 1 from RADE_DETAIL_WHERE(cle) and r__.indicateur = indic and CRITERE
 	)
 $$;
 #define RADE_NOUVEAU(cle, indic) RADE_NOUVEAU(cle, indic, 0=0)
@@ -110,10 +116,13 @@ $$;
 
 #if RADE_TEMP_TEMP
 
+#define /RADE_TEMP_PRODUC_COL,/
+#define /RADE_TEMP_PRODUC_VAL,/
 #define MIENS 1=1
 #define AND_MIENS
 #define MIENS_AND
 #define WHERE_MIENS
+
 #if not defined(RADE_TEMP_EXISTE)
 #if :driver = "pgsql"
 #set RADE_TEMP_EXISTE `select count(*) from pg_tables where tablename = 'RADE_TEMP'`
@@ -125,7 +134,9 @@ $$;
 
 #else
 
-#define MIENS producteur = ':SCRIPT_NAME'
+#define RADE_TEMP_PRODUC_COL RADE_PRODUC_COL
+#define RADE_TEMP_PRODUC_VAL RADE_PRODUC_VAL
+#define MIENS RADE_PRODUC_MIEN
 #define AND_MIENS and MIENS
 #define MIENS_AND MIENS and
 #define WHERE_MIENS where MIENS
@@ -146,11 +157,11 @@ $$
 #endif
 
 #if RADE_TEMP_TEMP
-#define RADE_T_PRODUCTEUR ':SCRIPT_NAME'
+#define RADE_T_PRODUCTEUR RADE_PRODUC_VAL
 #else
-#define RADE_T_PRODUCTEUR t.producteur
+#define RADE_T_PRODUCTEUR t.RADE_PRODUC_COL
 #endif
-#define RADE_REF_POUR_T RADE_REF r where r.indicateur = t.indicateur and r.producteur = RADE_T_PRODUCTEUR
+#define RADE_REF_POUR_T RADE_REF r where r.indicateur = t.indicateur and r.RADE_PRODUC_COL = RADE_T_PRODUCTEUR
 #define T_POUR_D where t.id = d.id and t.indicateur = cast(d.indicateur_id as T_TEXT(255))
 #define RADE_TEMP_POUR_D RADE_TEMP t T_POUR_D
 
