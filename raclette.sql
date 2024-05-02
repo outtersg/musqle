@@ -62,15 +62,26 @@ create table RACLETTE_TABLE
 drop table if exists RACLETTE_BOULOT;
 create RACLETTE_TEMP table RACLETTE_BOULOT as
 #if defined(:pilote) && :pilote ~ /^ora/
+#if ___NOTE___
+-- Pour Oracle, comment différencier:
+-- - Le même sql_id indique simplement deux requêtes qui jouent le même SQL
+-- - Un sql_exec_id peut avoir plusieurs sql_id, car v$session garde l'historique de plusieurs requêtes jouées durant la session
+--   Et si le même SQL est joué plusieurs fois dans la même session il apparaîtra avec même sql_exec_id et même sql_id :-(
+-- - Une même requête jouée en parallèle a mêmes sql_exec_id et sql_id
+-- - fixed_table_sequence est propre à une requête, mais il est instable (il monte au fur et à mesure que la requête franchit des jalons internes Oracle)
+-- - audsid semble stable, propre à une requête, et partagé par tous les exécutants de la même requête
+--   sauf qu'on a des audsid = 0 (mais uniquement quand sql_id is null et username is null, que nous excluons?)
+-- Reste la question de l'unicité dans le temps: l'audsid est-il recyclé (risque d'écrasement)?
+#endif
 	with
 		e as
 		(
 			-- À FAIRE: Remonter le user façon paramètre.
-			select sql_id, min(sql_exec_start) sql_exec_start
+			select sql_id, audsid, min(sql_exec_start) sql_exec_start
 			from v$session
 			where sql_exec_start < sysdate - interval '10' minute
 			and status = 'ACTIVE' and username not in ('SYS')
-			group by sql_id
+			group by sql_id, audsid
 		),
 		-- Le SQL figure en plusieurs exemplaires en fonction de je ne sais quoi.
 		su as (select s.sql_id, min(child_number) micn from e, v$sql s where s.sql_id = e.sql_id group by s.sql_id),
@@ -82,7 +93,7 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 		)
 	select
 		cast('' as varchar2(RACLETTE_CLÉ_T)) cle, -- La clé sera calculée plus tard après purge de la requête.
-		sql_id id,
+		audsid id,
 		sql_exec_start debut,
 		req,
 		(
