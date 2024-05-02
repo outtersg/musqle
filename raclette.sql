@@ -1,4 +1,5 @@
-#if 0
+#define ___NOTE___ 0
+#if ___NOTE___
 -- Copyright (c) 2024 Guillaume Outters
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -40,7 +41,7 @@
 
 #if defined(:pilote) && :pilote ~ /^ora/
 #define RACLETTE_MÉM_T clob
-#if 0
+#if ___NOTE___
 -- Pensez à avoir installé la fonction crc_lob de crc.oracle.sql
 #endif
 #define RACLETTE_CRC(x) crc_lob(x)
@@ -124,6 +125,12 @@ $$;
 #if 0
 RACLETTE_EXTRAIRE_PARAM('clé = ''(valeur)''', '$<clé:\1>');
 etc.;
+#endif
+
+#if ___NOTE___
+-- On calcule notre clé SQL.
+-- On n'utilise *pas* la clé d'unicité de la base (ex.: sql_hash_value ou sql_id sous Oracle),
+-- car elle est calculée sur le SQL original, alors qu'avec nos extractions on a pu encore épurer le SQL.
 #endif
 
 -- Cette version est trop longue:
