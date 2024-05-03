@@ -76,11 +76,11 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 	with
 		e as
 		(
-			select sql_id, audsid, sql_exec_id, min(sql_exec_start) sql_exec_start
+			select sql_id, audsid, sql_exec_id, min(sql_exec_start) sql_exec_start, username
 			from v$session
 			where sql_exec_start < sysdate - interval '10' minute
 			and status = 'ACTIVE' and username not in ('SYS')
-			group by sql_id, audsid, sql_exec_id
+			group by sql_id, audsid, sql_exec_id, username
 		),
 		-- Le SQL figure en plusieurs exemplaires en fonction de je ne sais quoi.
 		su as (select s.sql_id, min(child_number) micn from e, v$sql s where s.sql_id = e.sql_id group by s.sql_id),
@@ -96,8 +96,13 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 		to_char(sql_exec_start, 'YYYYMMDD')||'.'||audsid||'.'||mod(sql_exec_id, 1048576) id,
 		sql_exec_start debut,
 		req,
+		'$USER = '||username||
 		(
-			select coalesce(listagg(p.name||' = '||p.value_string, ' | ') within group (order by position, dup_position), '')
+			select
+				case
+					when count(1) = 0 then ''
+					else ' | '||listagg(p.name||' = '||p.value_string, ' | ') within group (order by position, dup_position)
+				end
 			from v$sql_bind_capture p where p.sql_id = s.sql_id
 		)
 		params
