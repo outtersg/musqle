@@ -71,7 +71,7 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 -- - fixed_table_sequence est propre à une requête, mais il est instable (il monte au fur et à mesure que la requête franchit des jalons internes Oracle)
 -- - audsid semble stable, propre à une requête, et partagé par tous les exécutants de la même requête
 --   sauf qu'on a des audsid = 0 (mais uniquement quand sql_id is null et username is null, que nous excluons?)
--- Reste la question de l'unicité dans le temps: l'audsid est-il recyclé (risque d'écrasement)?
+-- Reste la question de l'unicité dans le temps: l'audsid étant recyclable, on le préfixe de la date.
 #endif
 	with
 		e as
@@ -93,7 +93,7 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 		)
 	select
 		cast('' as varchar2(RACLETTE_CLÉ_T)) cle, -- La clé sera calculée plus tard après purge de la requête.
-		audsid id,
+		to_char(sql_exec_start, 'YYYYMMDD')||'.'||audsid id,
 		sql_exec_start debut,
 		req,
 		(
