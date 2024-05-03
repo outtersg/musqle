@@ -65,23 +65,22 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 #if ___NOTE___
 -- Pour Oracle, comment différencier:
 -- - Le même sql_id indique simplement deux requêtes qui jouent le même SQL
--- - Un sql_exec_id peut avoir plusieurs sql_id, car v$session garde l'historique de plusieurs requêtes jouées durant la session
---   Et si le même SQL est joué plusieurs fois dans la même session il apparaîtra avec même sql_exec_id et même sql_id :-(
--- - Une même requête jouée en parallèle a mêmes sql_exec_id et sql_id
--- - fixed_table_sequence est propre à une requête, mais il est instable (il monte au fur et à mesure que la requête franchit des jalons internes Oracle)
--- - audsid semble stable, propre à une requête, et partagé par tous les exécutants de la même requête
---   sauf qu'on a des audsid = 0 (mais uniquement quand sql_id is null et username is null, que nous excluons?)
--- Reste la question de l'unicité dans le temps: l'audsid étant recyclable, on le préfixe de la date.
+-- - fixed_table_sequence est propre à une requête, mais il est instable (il monte au fur et à mesure que la requête franchit des jalons internes Oracle; et même à l'intérieur d'une requête en parallèle, toutes n'en sont pas au même stade)
+-- - audsid semble stable, et partagé par tous les exécutants de la même requête. Mais il n'est pas propre à la requête (il est préservé d'une requête sur l'autre dans la session, donc ne permet pas de distinguer deux lancements de la même requête dans la même session).
+--   (les audsid = 0 ne nous embêtent pas car ils concernent uniquement les sql_id is null et username is null, que nous excluons)
+-- - L'audsid étant recyclable, il lui faut aussi le préfixe de la date
+-- - Le sql_exec_id démarre à 16777216 (2^24), et croît au fil des usages.
+--   Mais une même requête jouée en parallèle a mêmes sql_exec_id et sql_id (c'est ce qu'on veut).
+-- => Pour identifier une requête unique, on utilise le triplet <date>.<audsid>.<sql_exec_id>
 #endif
 	with
 		e as
 		(
-			-- À FAIRE: Remonter le user façon paramètre.
-			select sql_id, audsid, min(sql_exec_start) sql_exec_start
+			select sql_id, audsid, sql_exec_id, min(sql_exec_start) sql_exec_start
 			from v$session
 			where sql_exec_start < sysdate - interval '10' minute
 			and status = 'ACTIVE' and username not in ('SYS')
-			group by sql_id, audsid
+			group by sql_id, audsid, sql_exec_id
 		),
 		-- Le SQL figure en plusieurs exemplaires en fonction de je ne sais quoi.
 		su as (select s.sql_id, min(child_number) micn from e, v$sql s where s.sql_id = e.sql_id group by s.sql_id),
@@ -93,7 +92,8 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 		)
 	select
 		cast('' as varchar2(RACLETTE_CLÉ_T)) cle, -- La clé sera calculée plus tard après purge de la requête.
-		to_char(sql_exec_start, 'YYYYMMDD')||'.'||audsid id,
+		-- On utilise un modulo pour raccourcir un peu; le risque de collision est faible car nous intéressant aux requêtes longues on espère qu'elles ne sont pas jouées 1 M fois dans la journée…
+		to_char(sql_exec_start, 'YYYYMMDD')||'.'||audsid||'.'||mod(sql_exec_id, 1048576) id,
 		sql_exec_start debut,
 		req,
 		(
