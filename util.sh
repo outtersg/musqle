@@ -235,7 +235,7 @@ sqleurcopy_csvVersSql()
 	sed < "$csv" \
 		-e "1{
 s/$sep/,/g
-s/$/) delimiter '$sep' from stdin/
+s/$/) csv delimiter '$sep' from stdin/
 s/^/#copy $table (/
 a\\
 \$ora2pg\$
