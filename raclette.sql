@@ -78,6 +78,7 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 		(
 			select sql_id, audsid, sql_exec_id, min(sql_exec_start) sql_exec_start, username
 			from v$session
+			-- À FAIRE: compléter aussi l'heure de fin avec celles retrouvées terminées?
 			where sql_exec_start < sysdate - interval '10' minute
 			and status = 'ACTIVE' and username not in ('SYS')
 			group by sql_id, audsid, sql_exec_id, username
