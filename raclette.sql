@@ -136,11 +136,16 @@ $$
 			)
 	where regexp_like(req, EXPR)
 $$;
+#if ___NOTE___
 
--- À FAIRE: ici comment intégrer les retapes spécifiées par l'appelant?
-#if 0
-RACLETTE_EXTRAIRE_PARAM('clé = ''(valeur)''', '$<clé:\1>');
-etc.;
+-- Vous pouvez définir un RACLETTE_INCL qui sera invoqué ici:
+-- il peut contenir des règles d'extraction de parties variables pour faire converger les requêtes vers un patron unique.
+-- Ex.:
+-- RACLETTE_EXTRAIRE_PARAM('clé = ''(valeur)''', 'clé = $<clé:\1>');
+
+#endif ___NOTE___
+#ifdef RACLETTE_INCL
+#include RACLETTE_INCL
 #endif
 
 #if ___NOTE___
