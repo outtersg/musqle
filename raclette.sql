@@ -25,6 +25,10 @@
 -- Requêtes Anormalement Coincées: Listage, Extraction, Toilettage, Transposition et Enregistrement
 -- Requêtes Agaçantes et Longues: Énumération, Uniformisation, Synthèse et Enregistrement
 
+-- NOTE: RACLETTE_REDUC
+-- En invoquant avec RACLETTE_REDUC=1, le script n'examine pas comme nominalement les requêtes en cours d'exécution,
+-- mais cherche parmi les requêtes anciennement consignées si un petit coup de RACLETTE_INCL ne permettrait pas d'en distiller une requête paramétrée.
+
 #endif
 #if !defined(RACLETTE_TABLE)
 #define RACLETTE_TABLE t_req_longues
@@ -61,6 +65,7 @@ create table RACLETTE_TABLE
 
 drop table if exists RACLETTE_BOULOT;
 create RACLETTE_TEMP table RACLETTE_BOULOT as
+#if !defined(RACLETTE_REDUC)
 #if defined(:pilote) && :pilote ~ /^ora/
 #if ___NOTE___
 -- Pour Oracle, comment différencier:
@@ -112,6 +117,11 @@ create RACLETTE_TEMP table RACLETTE_BOULOT as
 #else
 	À FAIRE;
 #endif
+#else -- defined(RACLETTE_REDUC)
+	select cle, row_number() over (order by cle) id, sysdate debut, req, cast('' as T_TEXT) params, cle cleo
+	from RACLETTE_TABLE
+;
+#endif -- !defined(RACLETTE_REDUC)
 
 #define RACLETTE_EXTRAIRE_PARAM(EXPR, REMPL) <<
 $$
@@ -183,9 +193,45 @@ insert into RACLETTE_TABLE (cle, req)
 
 #include rade.sql
 
+#if !defined(RACLETTE_REDUC)
+
 insert into RADE_TEMP (RADE_TEMP_PRODUC_COL, indicateur, id, q, commentaire)
 	select RADE_TEMP_PRODUC_VAL, cle, id, debut, params
 	from RACLETTE_BOULOT
 ;
 
 #include rade.sql
+
+#else
+
+-- Les entrées qui ne bougent pas n'ont pas d'intérêt.
+delete from RACLETTE_BOULOT where cle = cleo;
+
+-- On s'assure que toutes nos nouvelles clés figurent dans RADE_REF (silo générique, en plus de RACLETTE_TABLE).
+-- COPIE: rade.sql
+insert into RADE_REF (indicateur, producteur)
+	with t as (select distinct cle indicateur, RADE_PRODUC_VAL producteur from RACLETTE_BOULOT t)
+	select * from t
+	where not exists (select 1 from RADE_REF_POUR_T)
+;
+
+drop table if exists RACLETTE_REPAR;
+create table RACLETTE_REPAR as
+	select b.cle, av.id av_id, ap.id ap_id, b.params
+	from RACLETTE_BOULOT b, RADE_REF av, RADE_REF ap
+	where av.RADE_PRODUC_MIEN and av.indicateur = b.cleo
+	and ap.RADE_PRODUC_MIEN and ap.indicateur = b.cle
+;
+select count(1)||' occurrences de '||count(distinct av_id)||' requêtes à rebrancher sur les '||count(distinct ap_id)||' requêtes génériques correspondantes.' from RACLETTE_REPAR;
+update RADE_DETAIL
+set
+	commentaire = case when commentaire is null then '' else commentaire||' | ' end||(select params from RACLETTE_REPAR where av_id = indicateur_id),
+	indicateur_id = (select ap_id from RACLETTE_REPAR where av_id = indicateur_id)
+where indicateur_id in (select av_id from RACLETTE_REPAR);
+delete from RADE_REF r
+where r.RADE_PRODUC_MIEN
+and not exists (select 1 from RADE_DETAIL d where d.indicateur_id = r.id)
+and not exists (select 1 from RADE_STATS s where s.indicateur_id = r.id);
+-- À FAIRE: ne pas considérer les réductions répondant elles-mêmes à leur réduction (ex.: "clé = '([^']*)'" → "clé = '$<clé:\1>'", la version paramétrisée répond à la regex.
+
+#endif
