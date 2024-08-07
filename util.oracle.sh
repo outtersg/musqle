@@ -154,8 +154,8 @@ oraCopy()
 	# À FAIRE?: une option sans direct=true?
 	
 	local fc=/tmp/temp.oraCopy.$$ # Fichiers de Contrôle.
-	local params="csv table" csv base table sep=";" rs= optionsSqlldr="log=\"$fc.log\", direct=true"
-	local paramsSqlldr="control=$fc.ctl silent=all" # le silent=all n'a aucun effet dans le fichier de contrôle, on passe par la ligne de commande.
+	local params="csv table" csv base table sep=";" rs= optionsSqlldr="direct=true"
+	local paramsSqlldr="control=$fc.ctl log=$fc.log silent=all" # le silent=all n'a aucun effet dans le fichier de contrôle, on passe par la ligne de commande. De même pour le log dans les options (cf. https://stackoverflow.com/a/14277555).
 	
 	while [ $# -gt 0 ]
 	do
