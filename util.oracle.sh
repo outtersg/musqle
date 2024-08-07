@@ -111,7 +111,8 @@ miamParam()
 
 _creaVersSql_oracle()
 {
-	sed -e 's/varchar(/varchar2(/gi'
+	sed -E \
+		-e 's/varchar\(/varchar2(/gi'
 }
 
 #- Transferts ------------------------------------------------------------------
