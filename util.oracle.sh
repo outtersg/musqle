@@ -177,7 +177,7 @@ oraCopy()
 		return 1
 	fi
 	
-	local cols="`IFS=, ; echo "$*"`"
+	local cols="`for p in "$@" ; do echo "$p" ; done | sed -e 's/:/@/' -e "s/@timestamp/ date 'YYYY-MM-DD HH24:MI:SS'/" -e 's/@.*//' | tr '\012' , | sed -e 's/,$//'`"
 	
 	oraParams "$base" complexe || return 1
 	
@@ -228,7 +228,7 @@ oracle_csvVersTable()
 	done
 	local table="$1" descr="$2" csv="$3"
 	
-	oraCopy -s "$sep" -b "$BDD" "$csv" "$table" `awk '{print$1}' < "$descr"`
+	oraCopy -s "$sep" -b "$BDD" "$csv" "$table" `awk '/ timestamp(,|$)/{print$1":timestamp";next}{print$1}' < "$descr"`
 }
 
 # Exécute une extraction Oracle et la restitue sous forme d'un create temp table PostgreSQL, à passer dans un sql2csv.php
