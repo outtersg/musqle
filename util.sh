@@ -240,6 +240,7 @@ s/^/#copy $table (/
 a\\
 \$ora2pg\$
 }" \
+		-e 's/<[^>]*>//g' \
 		-e '$a\
 $ora2pg$;
 '
