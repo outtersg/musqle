@@ -373,10 +373,41 @@ quelletable()
 	
 	grainAMoudre()
 	{
+		awk '{print NR" "$0}' < $T.t | sort -nr > $T.tr
 		awk '
+			BEGIN{ posd = 0; posf = -1; }
+			posd==posf{ next; }
 			/^= /{
+				# Répartition en files rapides et files lentes.
+				# Il est important de lancer dès le départ les lentes (pour ne pas terminer par les requêtes lentes),
+				# mais aussi quelques rapides (pour donner l impression d avancer, et remonter les résultats "faciles" au plus vite).
+				if(!traiteurs[$2])
+				{
+					if(ntraiteurs) ++ntraiteurs; else ntraiteurs = 1;
+					traiteurs[$2] = (ntraiteurs % 4) == 1 ? -1 : 1; # Un traiteur sur quatre va travailler en sens inverse (commencer par les plus rapides).
+				}
+				# Au boulot: on lui fournit la prochaine donnée à manger.
 				traiteur = $2;
-				if(getline < "'"$T.t"'" > 0)
+				if(traiteurs[traiteur] < 0)
+				{
+					if((getline < "'"$T.tr"'") > 0)
+					{
+						posf = $1;
+						for(i=0; ++i < NF;)
+							$i=$(i+1);
+						--NF;
+					}
+					else
+						posf = posd;
+				}
+				else
+				{
+					if((getline < "'"$T.t"'") > 0)
+						++posd;
+					else
+						posd = posf;
+				}
+				if(posd != posf)
 					print > traiteur;
 				else
 				{
@@ -387,7 +418,7 @@ quelletable()
 			}
 			{print}
 		'
-		rm "$T.t"
+		rm $T.t $T.tr
 		# Sinon en shell pour éviter de fermer le tube: https://stackoverflow.com/a/8436387
 	}
 	
