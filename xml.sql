@@ -28,12 +28,33 @@
 -- BOXER: Balises Orphelines XML En Reconstruction
 -- Sur un XML qui a été tronqué, reconstruit les balises fermantes pour en faire au moins un XML valide.
 #endif
-create or replace function xavier(xml text) returns text language plpgsql as
+#if defined(:pilote) and :pilote == "oracle"
+#define T_CLOB clob
+#define PROC_LANG
+#define PROC_RET   return
+#define PROC_DÉBUT
+#define PROC_DÉCL
+#define PROC_FIN
+#define POSITION(aiguille, botte) instr(botte, aiguille)
+#define GSUB(source, regex, rempl) regexp_replace(source, regex, rempl)
+#else
+#define T_CLOB text
+#define PROC_LANG  language plpgsql
+#define PROC_RET   returns
+#define PROC_DÉBUT $$
+#define PROC_DÉCL  declare
+#define PROC_FIN   $$;
+#define POSITION(aiguille, botte) position(aiguille in botte)
+#define GSUB(source, regex, rempl) regexp_replace(source, regex, rempl, 'g')
+#endif
+create or replace function xavier(xml T_CLOB) PROC_RET T_CLOB PROC_LANG as
+#if PROC_DÉBUT == "$$"
 $$
-	declare
-		r text; -- Reste.
-		b0 text; -- Bout.
-		b1 text;
+#endif
+	PROC_DÉCL
+		r T_CLOB; -- Reste.
+		b0 T_CLOB; -- Bout.
+		b1 T_CLOB;
 		p integer;
 	begin
 		-- On élimine:
@@ -44,23 +65,23 @@ $$
 		-- - une balise ouvrante suivie d'une sous-balise
 		r := regexp_replace(xml, '(?:<[^/][^>*]*[^/]>|</[^<]*|<[^/][^>]*|<[^>]*[^/]>[^<]*)$', '');
 		b0 := replace(r, chr(10), ' ');
-		b0 := regexp_replace(b0, '<[^>]+/>|<[?][^>]*[?]>', '', 'g'); -- Les <balise/> et <?xml …?>
-		b0 := regexp_replace(b0, '>[^<]+<', '><', 'g'); -- Le contenu textuel
-		b0 := regexp_replace(b0, '<([^> ]+)[ ][^>]*[^/>]>', '<\1>', 'g'); -- Les attributs
+		b0 := GSUB(b0, '<[^>]+/>|<[?][^>]*[?]>', ''); -- Les <balise/> et <?xml …?>
+		b0 := GSUB(b0, '>[^<]+<', '><'); -- Le contenu textuel
+		b0 := GSUB(b0, '<([^> ]+)[ ][^>]*[^/>]>', '<\1>'); -- Les attributs
 		while b1 is null or length(b0) < length(b1) loop
 			b1 := b0;
-			b0 := regexp_replace(b0, '<[^/][^>]*></[^>]*>', '', 'g');
+			b0 := GSUB(b0, '<[^/][^>]*></[^>]*>', '');
 		end loop;
 		b0 := '';
 		loop
-			p := position('>' in b1); -- position, locate, instr, charindex…
+			p := POSITION('>', b1); -- position, locate, instr, charindex…
 			exit when p = 0;
 			b0 := '</'||substr(b1, 2, p - 1)||b0;
 			b1 := substr(b1, p + 1);
 		end loop;
 		return r||b0;
 	end;
-$$;
+PROC_FIN
 #if ___NOTE___
 -- { echo "#format delim \\t" ; echo "#include xml.sql" ; awk '/<\/test>/{oui=0}oui{print}/<test>/{oui=1}' < xml.sql ; } | bdd='pgsql:host=localhost port=5432 dbname=test' php ../sqleur/sql2csv.php
 -- <test>
