@@ -112,6 +112,7 @@ miamParam()
 _creaVersSql_oracle()
 {
 	sed -E \
+		-e 's/varchar\(([4-9][0-9]{3}|[0-9]{5,})\)/clob/gi' \
 		-e 's/varchar\(/varchar2(/gi' \
 		-e 's/ boolean(,|$)/ char(1)\1/gi'
 }
