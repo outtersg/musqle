@@ -220,18 +220,19 @@ TERMINE
 
 oracle_csvVersTable()
 {
-	local sep=\;
+	local sep=\; sepl="\012"
 	while [ $# -gt 0 ]
 	do
 		case "$1" in
 			-s) sep="$2" ; shift ;;
+			-l) sepl="$2" ; shift ;;
 			*) break ;;
 		esac
 		shift
 	done
 	local table="$1" descr="$2" csv="$3"
 	
-	oraCopy -s "$sep" -b "$BDD" "$csv" "$table" `awk '/ timestamp(,|$)/{print$1":timestamp";next}/varchar\(([4-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9]+)|text|clob/{print$1":char(999999999)";next}{print$1}' < "$descr"`
+	oraCopy -s "$sep" -rs "$sepl" -b "$BDD" "$csv" "$table" `awk '/ timestamp(,|$)/{print$1":timestamp";next}/varchar\(([4-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9]+)|text|clob/{print$1":char(999999999)";next}{print$1}' < "$descr"`
 	# À FAIRE: exploiter le -rs comme délimiteur d'entrée; permettra de passer des données comportant des retours à la ligne.
 }
 

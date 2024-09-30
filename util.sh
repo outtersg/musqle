@@ -102,13 +102,14 @@ paire()
 # Se contenter de quelques milliers d'entrées (pour plus, se constituer des extracteurs maison dédiés).
 sql2table()
 {
-	local base sep=';' table crea temp params=table T=/tmp/temp.sql2table.$$
+	local base sep=';' sepl= table crea temp params=table T=/tmp/temp.sql2table.$$
 	
 	while [ $# -gt 0 ]
 	do
 		case "$1" in
 			-b) base="$2" ; shift ;;
 			-s) sep="$2" ; shift ;;
+			-l) sepl="$2" ; shift ;;
 			-t|temp) crea=1 ; temp=-t ;;
 			-c) crea=1 ;;
 			*) miamParam "$1" $params || break ;;
@@ -118,8 +119,11 @@ sql2table()
 	if [ -z "$*" -o -z "$table" ]
 	then
 		cat >&2 <<TERMINE
-# Utilisation: sql2table [-s <sép>] [-b <base>] [temp|-t|-c] <tablea>[:<type>] <fichier .sql>|<requête sql>|-
+# Utilisation: sql2table [-s <sép>] [-l <sép ligne>] [-b <base>] [temp|-t|-c] <tablea>[:<type>] <fichier .sql>|<requête sql>|-
   -s <sép>
+  -l <sép ligne>
+    (sous réserve de support par le moteur sous-jacent)
+    La dernière ligne elle aussi doit être terminée par cette chaîne.
   -b <base>
   [temp|-t|-c] <table>[:<type>]
     Nom de la table portant le résultat côté à la cible.
@@ -145,12 +149,14 @@ TERMINE
 	
 	# Import
 	
-	local typeCible csvVersSql
+	local typeCible csvVersSql sepop="`printf '\014'`" options
 	case "$table" in
 		*:*) IFS=: ; paire table typeCible $table ;;
 	esac
 	[ -z "$crea" ] || creaVersSql $temp "$table" "$T.descr"
-	csvVersSql -s "$sep" "$table" "$T.descr" "$T.csv"
+	case "$sepl" in ?*) options="$options-l$sepop$sepl$sepop" ;; esac
+	IFS="$sepop"
+	tifs csvVersSql -s "$sep" $options "$table" "$T.descr" "$T.csv"
 	
 	# À FAIRE: implémenter aussi l'intégration vers une nouvelle base, par exemple avec une option -d <base destination>,
 	#          qui permettrait d'avoir un outil tout-en-un pouvant faire office d'ETL.
@@ -161,11 +167,12 @@ TERMINE
 
 csv2table()
 {
-	local sep=';' crea=0
+	local sep=';' sepl crea=0
 	while [ $# -gt 0 ]
 	do
 		case "$1" in
 			-s) sep="$2" ; shift ;;
+			-l) sepl="$2" ; shift ;;
 			-b) configBdd "$2" ; shift ;;
 			--drop) crea=-1 ;;
 			-c) crea=1 ;;
@@ -174,7 +181,7 @@ csv2table()
 		shift
 	done
 	
-	local table="$1" descr="$2" csv="$3"
+	local table="$1" descr="$2" csv="$3" options
 	
 	# Création.
 	
@@ -191,7 +198,11 @@ csv2table()
 	
 	# Remplissage.
 	
-	csvVersTable -s "$sep" "$table" "$descr" "$csv"
+	local sepop="`printf '\014'`" options
+	case "$sepl" in ?*) options="$options-l$sepop$sepl$sepop" ;; esac
+	
+	IFS="$sepop"
+	tifs csvVersTable -s "$sep" $options "$table" "$descr" "$csv"
 }
 
 creaVersSql()
