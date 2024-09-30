@@ -65,6 +65,12 @@ miamParam()
 	params="$*"
 }
 
+tifs()
+{
+	unset IFS
+	"$@"
+}
+
 commande()
 {
 	command -v "$*" 2> /dev/null >&2
