@@ -63,7 +63,7 @@ $$
 		-- mais on garde:
 		-- - un début de balise fermante, qu'on suppose suivre un contenu complet, ex.: <morceau>contenu</mo
 		-- - une balise ouvrante suivie d'une sous-balise
-		r := regexp_replace(xml, '(?:<[^/][^>*]*[^/]>|</[^<]*|<[^/][^>]*|<[^>]*[^/]>[^<]*)$', '');
+		r := regexp_replace(xml, '(?:<[^/][^>*]*[^/]>|</[^<]*|<[^/][^>]*|<[^>]*[^/]>[^<]*|<)$', '');
 		b0 := replace(r, chr(10), ' ');
 		b0 := GSUB(b0, '<[^>]+/>|<[?][^>]*[?]>', ''); -- Les <balise/> et <?xml …?>
 		b0 := GSUB(b0, '>[^<]+<', '><'); -- Le contenu textuel
@@ -92,6 +92,7 @@ with
 		union select '<?xml bla?><début><milieu>oui</milieu><autre>non</au',  '<?xml bla?><début><milieu>oui</milieu><autre>non</autre></début>'
 		union select '<?xml bla?><début><milieu>oui</milieu><autre>no',       '<?xml bla?><début><milieu>oui</milieu></début>'
 		union select '<?xml bla?><début><milieu>oui</milieu><autre><oui/><a', '<?xml bla?><début><milieu>oui</milieu><autre><oui/></autre></début>'
+		union select '<?xml bla?><début><',                                   '<?xml bla?><début></début>'
 	),
 	x as (select t.*, xavier(e) r from t)
 select case when a = r then '[32moui[0m' else '[31mnon[0m' end bon, e entree, a attendu, r recu from x;
