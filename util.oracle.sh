@@ -117,6 +117,75 @@ _creaVersSql_oracle()
 		-e 's/ boolean(,|$)/ char(1)\1/gi'
 }
 
+#- Index -----------------------------------------------------------------------
+
+reindex_oracle()
+{
+	local base filtre age="3 months" para=8 passes="1 2 3 4" butee=/tmp/stopreindex # passes: pour gérer les échecs si l'index est en cours d'utilisation.
+	while [ $# -gt 0 ]
+	do
+		case "$1" in
+			-b) shift ; base="$1" ;;
+			-n) passes= ;;
+			[1-9]*" "[a-zA-Z]*) age="$1" ;;
+			*) filtre="$1" ;;
+		esac
+		shift
+	done
+	_ora_duree()
+	{
+		case "$2" in *[sS]) set -- "$1" "`echo "$2" | sed -e 's/.$//'`" ;; esac
+		echo "'$1' $2"
+	}
+	age="`_ora_duree $age`"
+	
+	oraParams "$base" complexe || return 1
+	
+	command -v sqlm 2> /dev/null >&2 || [ ! -f "$SCRIPTS/../sqleur/sqlminus.sh" ] || . "$SCRIPTS/../sqleur/sqlminus.sh"
+	
+	sqlm -s \\t \
+	"
+		select /*+ parallel(8) */
+			table_name, index_name, coalesce(degree, '1'), logging, last_analyzed
+		from all_indexes i
+		where $filtre
+		and last_analyzed < sysdate - interval $age
+		-- Si la table contient 0 entrée, son last_analyzed restera éternellement à la date de création de l'index.
+		-- On évite donc ces index.
+		-- Cependant les tables trop petites restent aussi hors radar (https://stackoverflow.com/a/19390409); on regarde donc si d'autres index sur la même table ont du contenu.
+		-- À FAIRE: les index conditionnels qui peuvent n'avoir aucun contenu tandis que la table a des entrées.
+		and (num_rows > 0 or (unpasvide(table_name) > 0 and exists (select 1 from all_indexes i2 where i2.table_name = i.table_name and i2.num_rows > 0))) -- Oracle court-circuite le second si le premier répond.
+		order by last_analyzed
+	" | sed -e 1d | while read itable inom ipara ihisto idate
+	do
+		[ ! -f "$butee" ] || { echo "[33m# Arrêt demandé par présence d'un fichier $butee" >&2 ; break ; }
+		
+		echo "=== $itable.$inom ==="
+		echo "Dernier calcul: $idate"
+		date
+		boulot="alter index $inom rebuild online parallel $para nologging;"
+		case "$passes" in
+			"") echo "$boulot" ;;
+			*)
+				for tentative in $passes
+				do
+					[ ! -f "$butee" ] || break
+					sqlm "$boulot" && break
+				done
+				;;
+		esac
+		{
+			echo "alter session set ddl_lock_timeout = 120;" # Pour éviter les ORA-00054.
+			case "$ipara" in "$para") true ;; 1) echo "alter index $inom noparallel;" ;; *) echo "alter index $inom parallel $ipara;" ;; esac
+			case "$ihisto" in YES) echo "alter index $inom logging;" ;; esac
+		} | \
+		case "$passes" in
+			"") cat ;;
+			*) sqlm ;;
+		esac
+	done
+}
+
 #- Transferts ------------------------------------------------------------------
 
 oraCopy()
