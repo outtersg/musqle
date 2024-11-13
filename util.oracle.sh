@@ -280,7 +280,7 @@ TERMINE
 			;;
 		*)
 			scp -C $fc.ctl "$csv" $BDD_SSH:/tmp/
-			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=\"\\\"$BDD_CHAINE\\\"\" $paramsSqlldr && rm -f $fc.ctl $fc.bad $fc.log $csvd" < /dev/null
+			ssh $BDD_SSH "$BDD_ENV ; sqlldr userid=\"\\\"$BDD_CHAINE\\\"\" $paramsSqlldr && rm -f $fc.ctl $fc.bad $fc.log $csvd /tmp/`basename "$csv"`" < /dev/null
 			;;
 	esac >&2
 	
