@@ -285,6 +285,8 @@ TERMINE
 	esac >&2
 	
 	# À FAIRE: en cas de sortie en erreur récupérer le .log
+	
+	rm -f $fc.*
 }
 
 oracle_csvVersTable()
